@@ -1,0 +1,35 @@
+{
+  "name": "vite-vue-typescript-starter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:edge-functions": "vitest src/__tests__/edge-functions.test.ts",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "aos": "^2.3.4",
+    "axios": "^1.6.0",
+    "element-plus": "^2.13.0",
+    "mind-elixir": "^5.3.8",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.18",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/aos": "^3.0.7",
+    "@types/node": "^25.0.3",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/ui": "4.0.16",
+    "@vue/tsconfig": "^0.8.0",
+    "happy-dom": "^20.0.11",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.16",
+    "vue-tsc": "^3.0.5"
+  }
+}
