@@ -2,7 +2,7 @@
  * 思维导图模板定义 (KityMinder 格式)
  */
 
-import type { MindmapContent, KMNode } from '@/types/files'
+import type { MindmapContent } from '@/types/files'
 
 export interface MindmapTemplate {
   id: string           // 模板ID
@@ -11,12 +11,6 @@ export interface MindmapTemplate {
   icon: string        // emoji 图标
   content: MindmapContent
 }
-
-// 辅助函数，快速创建节点内容
-const createNode = (text: string, children: KMNode[] = []): KMNode => ({
-  data: { text },
-  children
-})
 
 // 3 个预置模板
 export const TEMPLATES: Record<string, MindmapTemplate> = {

@@ -65,7 +65,6 @@ const fileStore = useFileStore()
 // 状态
 const selectedFileId = ref<string | null>(null)
 const currentData = ref<any>(null)
-const editorRef = ref<any>(null)
 const showSidebar = ref(true)
 const hasChanges = ref(false)
 const lastSaveTime = ref<string>('')
