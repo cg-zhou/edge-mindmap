@@ -18,112 +18,126 @@ const createNode = (text: string, children: KMNode[] = []): KMNode => ({
   children
 })
 
-// 4 个预置模板
+// 3 个预置模板
 export const TEMPLATES: Record<string, MindmapTemplate> = {
   blank: {
     id: 'blank',
-    name: '空白',
-    description: '从空白开始',
+    name: '默认',
+    description: '紧凑经典样式',
     icon: '✨',
     content: {
       root: {
-        data: { text: '中心主题' },
-        children: []
+        data: { 
+          text: '欢迎使用',
+          note: '这是一段操作说明，帮助您快速上手。',
+          hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net',
+          priority: 1
+        },
+        children: [
+          { data: { text: '键盘快捷键 (高效率)', priority: 2 }, children: [
+            { data: { text: 'Tab: 插入下级节点' }, children: [] },
+            { data: { text: 'Enter: 插入同级节点' }, children: [] },
+            { data: { text: 'F2: 编辑节点文本' }, children: [] },
+            { data: { text: 'Delete: 删除选中节点' }, children: [] }
+          ]},
+          { data: { text: '富文本功能展示', progress: 5 }, children: [
+            { data: { text: '优先级图标 (Priority)', priority: 1 }, children: [] },
+            { data: { text: '任务进度环 (Progress)', progress: 8 }, children: [] },
+            { data: { text: '资源标签 (Resource)', resource: ['标签1', '标签2'] }, children: [] },
+            { data: { text: '备注功能 (Note)', note: '点击右下角查看详情' }, children: [] }
+          ]},
+          { data: { text: '视图操作', resource: ['视图'] }, children: [
+            { data: { text: '鼠标滚轮: 上下滚动' }, children: [] },
+            { data: { text: 'Ctrl+滚轮: 缩放画布' }, children: [] },
+            { data: { text: '右键拖拽: 移动画布' }, children: [] }
+          ]},
+          { data: { text: '官方网站', hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net' }, children: [] }
+        ]
       },
-      template: 'default',
-      theme: 'fresh-blue',
+      template: 'right',
+      theme: 'classic-compact',
       version: '1.4.43'
     }
   },
 
-  planning: {
-    id: 'planning',
-    name: '项目计划',
-    description: '设计→开发→测试→发布',
-    icon: '📋',
+  dir: {
+    id: 'dir',
+    name: '目录组织',
+    description: '展示进度与标签',
+    icon: '📁',
     content: {
-      root: createNode('🚀 项目计划', [
-        createNode('📅 需求分析', [
-          createNode('用户访谈'),
-          createNode('需求文档')
-        ]),
-        createNode('🎨 系统设计', [
-          createNode('UI/UX 设计'),
-          createNode('架构设计')
-        ]),
-        createNode('💻 开发实现', [
-          createNode('前端开发'),
-          createNode('后端开发')
-        ]),
-        createNode('🧪 测试验证', [
-          createNode('单元测试'),
-          createNode('验收测试')
-        ]),
-        createNode('🚀 发布上线', [
-          createNode('正式上线')
-        ])
-      ]),
-      template: 'default',
-      theme: 'fresh-blue',
+      root: {
+        data: { text: '项目资产管理' },
+        children: [
+          { 
+            data: { text: '核心文档', resource: ['重要'], progress: 3 }, 
+            children: [
+              { data: { text: '产品需求文档 (PRD)', hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net' }, children: [] },
+              { data: { text: '交互设计稿', priority: 1 }, children: [] },
+              { data: { text: '视觉规范', note: '包含字体和配色方案' }, children: [] }
+            ] 
+          },
+          { 
+            data: { text: '工程代码', resource: ['开发'], progress: 6 }, 
+            children: [
+              { data: { text: '前端仓库 (Edge Mindmap)', priority: 1, hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net' }, children: [] },
+              { data: { text: '后端 API 全集', resource: ['API'] }, children: [] },
+              { data: { text: '数据库迁移脚本' }, children: [] }
+            ] 
+          },
+          { 
+            data: { text: '基础设施', resource: ['运维'] }, 
+            children: [
+              { data: { text: 'ESA 边缘服务部署', progress: 10 }, children: [] },
+              { data: { text: '域名解析设置' }, children: [] }
+            ] 
+          }
+        ]
+      },
+      template: 'filetree',
+      theme: 'fresh-purple-compat',
       version: '1.4.43'
     }
   },
 
-  meeting: {
-    id: 'meeting',
-    name: '会议记录',
-    description: '议题→参与者→讨论→决议',
-    icon: '📝',
+  fish: {
+    id: 'fish',
+    name: '鱼骨图',
+    description: '线框冷光风格',
+    icon: '🐟',
     content: {
-      root: createNode('📝 会议记录', [
-        createNode('🎯 议题', [
-          createNode('产品进度回顾'),
-          createNode('下季度规划')
-        ]),
-        createNode('👥 参与者', [
-          createNode('主持人: Alex'),
-          createNode('记录人: Sam')
-        ]),
-        createNode('💬 讨论内容', [
-          createNode('新技术栈选型'),
-          createNode('风险评估')
-        ]),
-        createNode('✅ 主要决议', [
-          createNode('确认采用 Vue 3'),
-          createNode('每周技术分享')
-        ]),
-        createNode('📌 待办事项', [
-          createNode('@Alex 整理文档')
-        ])
-      ]),
-      template: 'default',
-      theme: 'fresh-blue',
-      version: '1.4.43'
-    }
-  },
-
-  brainstorm: {
-    id: 'brainstorm',
-    name: '头脑风暴',
-    description: '主题→自由发散想法',
-    icon: '💡',
-    content: {
-      root: createNode('💡 头脑风暴', [
-        createNode('🌟 核心目标', [
-          createNode('提升用户留存'),
-          createNode('增加日活')
-        ]),
-        createNode('💥 创意发散', [
-          createNode('游戏化任务'),
-          createNode('每日签到'),
-          createNode('社区互动')
-        ]),
-        createNode('🚧 潜在风险', [
-          createNode('开发成本高')
-        ])
-      ]),
-      template: 'default',
-      theme: 'fresh-blue',
+      root: {
+        data: { 
+          text: '性能回归原因分析',
+          note: '针对 1.5.0 版本的启动耗时分析'
+        },
+        children: [
+          { 
+            data: { text: '代码层面', priority: 1 }, 
+            children: [
+              { data: { text: '未使用的依赖包过多', progress: 4, note: '需要清理 package.json' }, children: [] },
+              { data: { text: '巨大的静态资源引入', priority: 2 }, children: [] },
+              { data: { text: '递归逻辑优化空间' }, children: [] }
+            ] 
+          },
+          { 
+            data: { text: '网络/环境', priority: 2 }, 
+            children: [
+              { data: { text: 'CDN 节点缓存未命中', resource: ['运维'] }, children: [] },
+              { data: { text: 'API 首字节延迟 (TTFB)', note: '需检查边缘函数耗时', hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net' }, children: [] }
+            ] 
+          },
+          { 
+            data: { text: '第三方插件', resource: ['工具'] }, 
+            children: [
+              { data: { text: '统计脚本阻塞渲染', progress: 1 }, children: [] },
+              { data: { text: '广告脚本检测' }, children: [] }
+            ] 
+          }
+        ]
+      },
+      template: 'fish-bone',
+      theme: 'snow-compact',
       version: '1.4.43'
     }
   }

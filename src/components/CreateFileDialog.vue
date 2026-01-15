@@ -171,16 +171,18 @@ defineExpose({
 
 .templates-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
 .template-card {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  text-align: center;
+  gap: 8px;
+  padding: 12px 8px;
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-default);
   background: rgba(255, 255, 255, 0.03);
@@ -204,19 +206,19 @@ defineExpose({
 }
 
 .template-info {
-  flex: 1;
+  width: 100%;
   min-width: 0;
 }
 
 .template-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text-main);
   margin-bottom: 2px;
 }
 
 .template-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;

@@ -60,6 +60,21 @@
 <script src="lib/ui-codemirror.js"></script>
 <!-- 如果 marked.js 丢失，请从此下载并放入 lib/ : https://cdn.jsdelivr.net/npm/marked/marked.min.js -->
 <script src="lib/marked.js"></script>
+<script>
+	// 兼容性修正：较新版本的 marked 是一个对象而非函数，但 KityMinder 期待它是一个函数
+	if (typeof marked === 'object' && typeof marked.parse === 'function') {
+		var _marked = marked;
+		window.marked = function() {
+			return _marked.parse.apply(_marked, arguments);
+		};
+		// 保留原有的方法供可能需要的其他地方使用
+		for (var key in _marked) {
+			if (_marked.hasOwnProperty(key)) {
+				window.marked[key] = _marked[key];
+			}
+		}
+	}
+</script>
 <script src="lib/kity.min.js"></script>
 <script src="lib/hotbox.js"></script>
 <script src="lib/json-diff.js"></script>
