@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #f8fafc;
 }
 
 .km-iframe {
@@ -103,19 +103,21 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: #ffffff;
   z-index: 10;
+  color: var(--color-text-secondary);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 10px;
+  border: 3px solid #f3f4f6;
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
 }
+
 
 @keyframes spin {
   0% { transform: rotate(0deg); }

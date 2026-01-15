@@ -39,6 +39,46 @@
         .btn-group-vertical:has(.image-btn) {
             display: none !important;
         }
+
+		/* 配合宿主主题色 #2A5FBD */
+		/* a {
+			color: #2A5FBD !important;
+		} */
+
+		/* 顶部工具栏背景调整 */
+		.km-editor .top-tab .nav-tabs {
+			background-color: #f8fafc !important; /* 清新背景 */
+			border-bottom: 1px solid #e2e8f0 !important;
+		}
+
+		.km-editor .top-tab .nav-tabs > li > a {
+			color: #64748b !important;
+		}
+
+		.km-editor .top-tab .nav-tabs > li.active > a,
+		.km-editor .top-tab .nav-tabs > li.active > a:hover,
+		.km-editor .top-tab .nav-tabs > li.active > a:focus {
+			color: #2A5FBD !important;
+			background-color: #ffffff !important;
+			border-bottom-color: transparent !important;
+		}
+
+		/* 按钮颜色覆盖 */
+		.km-editor .km-btn-item.active,
+		.km-editor .km-btn-item:active {
+			background: #eff6ff !important;
+			color: #2A5FBD !important;
+		}
+
+		.km-editor .km-btn-item:hover {
+			background: #f1f5f9 !important;
+		}
+
+		/* 覆盖 KityMinder 默认的主题色（如果有） */
+		.km-editor .km-priority-icon,
+		.km-editor .km-progress-icon {
+			filter: hue-rotate(10deg) saturate(1.2); /* 微调图标色调匹配 #2A5FBD */
+		}
 	</style>
 </head>
 <body ng-app="kityminderDemo" ng-controller="MainController">

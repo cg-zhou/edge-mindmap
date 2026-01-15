@@ -344,7 +344,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10;
-  border-right: 1px solid var(--border-glass);
+  box-shadow: 2px 0 8px #0000001a;
 }
 
 .sidebar.collapsed {
@@ -365,33 +365,35 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   padding: 0 20px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px);
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-glass);
   gap: 16px;
-  padding: 12px;
+  padding: 12px 24px;
 }
 
 .toggle-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  font-size: 24px;
+  background: var(--color-secondary);
+  border: 1px solid var(--border-glass);
+  color: var(--color-text-main);
+  font-size: 20px;
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: var(--radius-default);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
   transition: all 0.2s;
   line-height: 1;
-  backdrop-filter: blur(10px);
 }
 
 .toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
+  background: #e5e7eb;
+  border-color: #d1d5db;
 }
 
 .title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-text-main);
   margin: 0;
@@ -404,19 +406,20 @@ onBeforeUnmount(() => {
 .actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .save-status {
   font-size: 13px;
   padding: 6px 12px;
-  border-radius: var(--radius-default);
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   color: var(--color-text-secondary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-secondary);
+  border: 1px solid var(--border-glass);
 }
 
 .status-text {
@@ -427,42 +430,44 @@ onBeforeUnmount(() => {
   display: inline-block;
   font-size: 12px;
   opacity: 0.6;
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 1px solid var(--border-glass);
   padding-left: 8px;
 }
 
 .save-status.status-saving {
-  color: var(--color-accent);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-primary);
+  background: #eff6ff;
+  border-color: #dbeafe;
 }
 
 .save-status.status-saved {
-  color: var(--color-text-main);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-success);
+  background: #f0fdf4;
+  border-color: #dcfce7;
 }
 
 .save-status.status-error {
   color: var(--color-danger);
-  background: rgba(239, 68, 68, 0.1);
+  background: #fef2f2;
+  border-color: #fee2e2;
 }
 
 .save-btn {
   padding: 8px 20px;
   background: var(--color-primary);
-  color: #0f172a;
+  color: #ffffff;
   border: none;
-  border-radius: var(--radius-default);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .save-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+  background: #0284c7;
   transform: translateY(-1px);
 }
 
@@ -473,7 +478,7 @@ onBeforeUnmount(() => {
 .save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background: #64748b;
+  background: #9ca3af;
 }
 
 /* 编辑器区域 */
@@ -481,7 +486,7 @@ onBeforeUnmount(() => {
   flex: 1;
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: #f8fafc;
 }
 
 .empty-state,
@@ -492,16 +497,18 @@ onBeforeUnmount(() => {
   justify-content: center;
   height: 100%;
   color: var(--color-text-secondary);
+  background: #ffffff;
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--color-accent);
+  border: 3px solid #f3f4f6;
+  border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
 }
+
 
 @keyframes spin {
   to {

@@ -184,21 +184,23 @@ defineExpose({
   gap: 8px;
   padding: 12px 8px;
   border: 1px solid var(--border-glass);
-  border-radius: var(--radius-default);
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .template-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .template-card.selected {
-  background: rgba(14, 165, 233, 0.15);
-  border-color: var(--color-accent);
+  background: #eff6ff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
+
 
 .template-icon {
   font-size: 24px;

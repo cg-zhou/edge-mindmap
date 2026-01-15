@@ -196,9 +196,6 @@ function animateParticles() {
   particles = particles.filter(p => !p.isClickParticle || p.life! > 0)
 
   // 绘制连接线
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'
-  ctx.lineWidth = 1
-
   for (let i = 0; i < particles.length; i++) {
     for (let j = i + 1; j < particles.length; j++) {
       const dx = particles[i]!.x - particles[j]!.x
@@ -206,8 +203,22 @@ function animateParticles() {
       const distance = Math.sqrt(dx * dx + dy * dy)
 
       if (distance < CONNECTION_DISTANCE) {
-        const opacity = (1 - distance / CONNECTION_DISTANCE) * 0.8
-        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`
+        const opacity = (1 - distance / CONNECTION_DISTANCE) * 0.5
+        
+        // 判断是否为交互区域（其中一个点靠近鼠标）
+        const distToMouseI = Math.sqrt(Math.pow(particles[i]!.x - mousePos.x, 2) + Math.pow(particles[i]!.y - mousePos.y, 2))
+        const distToMouseJ = Math.sqrt(Math.pow(particles[j]!.x - mousePos.x, 2) + Math.pow(particles[j]!.y - mousePos.y, 2))
+        const isInteractive = distToMouseI < MOUSE_INTERACTION_DISTANCE || distToMouseJ < MOUSE_INTERACTION_DISTANCE
+        
+        if (isInteractive) {
+          ctx.strokeStyle = `rgba(42, 95, 189, ${opacity * 0.8})`
+          ctx.lineWidth = 0.8
+        } else {
+          // 加深非交互状态下的灰色线条（从 Slate-200 提升到了 Slate-400 级别）
+          ctx.strokeStyle = `rgba(148, 163, 184, ${opacity * 0.6})`
+          ctx.lineWidth = 0.5
+        }
+
         ctx.beginPath()
         ctx.moveTo(particles[i]!.x, particles[i]!.y)
         ctx.lineTo(particles[j]!.x, particles[j]!.y)
@@ -218,16 +229,24 @@ function animateParticles() {
 
   // 绘制粒子（节点）
   particles.forEach(particle => {
-    // 星星/粒子颜色：白色
-    ctx.fillStyle = `rgba(255, 255, 255, ${particle.opacity * 2.2})`
+    const distToMouse = Math.sqrt(Math.pow(particle.x - mousePos.x, 2) + Math.pow(particle.y - mousePos.y, 2))
+    const isClose = distToMouse < MOUSE_INTERACTION_DISTANCE || particle.isClickParticle
+
+    // 基础颜色改为中性灰蓝，交互时变为品牌蓝
+    if (isClose) {
+      ctx.fillStyle = `rgba(42, 95, 189, ${particle.opacity * 0.7})`
+    } else {
+      // 稍微调淡非交互状态下的粒子颜色（避免圆点过于突兀）
+      ctx.fillStyle = `rgba(148, 163, 184, ${particle.opacity * 0.4})`
+    }
+    
     ctx.beginPath()
-    ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2)
+    ctx.arc(particle.x, particle.y, isClose ? particle.radius : particle.radius * 0.7, 0, Math.PI * 2)
     ctx.fill()
 
-    // 高亮效果（靠近鼠标时或点击粒子）
-    if (particle.opacity > 0.65 || particle.isClickParticle) {
-      // 高亮光圈：白色
-      ctx.strokeStyle = `rgba(255, 255, 255, ${particle.opacity * 0.6})`
+    // 高亮效果
+    if (isClose) {
+      ctx.strokeStyle = `rgba(42, 95, 189, ${particle.opacity * 0.3})`
       ctx.lineWidth = 1
       ctx.beginPath()
       ctx.arc(particle.x, particle.y, particle.radius + 3, 0, Math.PI * 2)
@@ -389,6 +408,8 @@ const handleLoginWithMicrosoft = (e: Event) => {
 .home-container {
   min-height: 100vh;
   overflow-x: hidden;
+  background: #f8fafc;
+  color: #1e293b;
 }
 
 /* Particle Canvas */
@@ -400,7 +421,7 @@ const handleLoginWithMicrosoft = (e: Event) => {
   height: 100%;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.5;
+  opacity: 1;
 }
 
 /* Hero Section */
@@ -429,64 +450,76 @@ const handleLoginWithMicrosoft = (e: Event) => {
   user-select: none;
 }
 
-.glow-badge {
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-}
-
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 50px;
-  color: white;
+  gap: 10px;
+  padding: 8px 24px;
+  background: rgba(42, 95, 189, 0.05);
+  border: 1px solid rgba(42, 95, 189, 0.1);
+  border-radius: 100px;
+  color: #2A5FBD;
   font-size: 14px;
-  margin-bottom: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 32px;
   text-decoration: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+
+.hero-badge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  transition: none;
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  20% { left: 100%; }
+  100% { left: 100%; }
 }
 
 .hero-badge:hover {
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(42, 95, 189, 0.1);
+  transform: translateY(-2px) scale(1.02);
+  border-color: rgba(42, 95, 189, 0.3);
+  box-shadow: 0 4px 20px rgba(42, 95, 189, 0.15);
 }
 
 .badge-icon {
-  font-size: 18px;
+  font-size: 16px;
+  animation: iconPulse 2s infinite;
+  display: inline-block;
 }
 
-@keyframes bounce {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-.glow-text {
-  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.15));
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1) rotate(0); filter: drop-shadow(0 0 0 rgba(42, 95, 189, 0)); }
+  50% { transform: scale(1.2) rotate(15deg); filter: drop-shadow(0 0 8px rgba(42, 95, 189, 0.5)); }
 }
 
 .hero-title {
   font-size: clamp(40px, 8vw, 72px);
   font-weight: 800;
-  color: white;
+  color: #0f172a;
   margin: 0;
   line-height: 1.2;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+  background: linear-gradient(135deg, #2A5FBD 0%, #1e40af 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -496,43 +529,14 @@ const handleLoginWithMicrosoft = (e: Event) => {
 .title-divider {
   display: inline-block;
   margin: 0 16px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #cbd5e1;
   font-weight: 300;
   animation: dividerPulse 2s ease-in-out infinite;
 }
 
-@keyframes dividerPulse {
-
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
-.gradient-animated {
-  animation: gradientShift 3s ease infinite;
-  background-size: 200% 200%;
-}
-
-@keyframes gradientShift {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
 .hero-subtitle {
   font-size: clamp(16px, 2vw, 20px);
-  color: rgba(255, 255, 255, 0.9);
+  color: #64748b;
   margin: 0 0 40px;
   max-width: 600px;
   margin-left: auto;
@@ -547,49 +551,43 @@ const handleLoginWithMicrosoft = (e: Event) => {
   flex-wrap: wrap;
 }
 
-.btn-primary,
-.btn-secondary,
-.btn-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 50px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
 .btn-primary {
-  background: white;
-  color: #0f172a;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: #2A5FBD;
+  color: #ffffff;
+  border: none;
 }
 
 .btn-primary:hover {
+  background: #1e4b9d;
   transform: translateY(-2px);
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(42, 95, 189, 0.3);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(10px);
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #d1d5db;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: #f8fafc;
+  border-color: #9ca3af;
   transform: translateY(-2px);
 }
 
-/* Click Effects */
+
 .btn-primary,
 .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: visible;
 }
@@ -602,21 +600,18 @@ const handleLoginWithMicrosoft = (e: Event) => {
 @keyframes button-click {
   0% {
     transform: scale(1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   }
 
   30% {
-    transform: scale(0.92);
-    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    transform: scale(0.95);
   }
 
   50% {
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.6), 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 20px rgba(42, 95, 189, 0.2);
   }
 
   100% {
-    transform: scale(1.05);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+    transform: scale(1);
   }
 }
 

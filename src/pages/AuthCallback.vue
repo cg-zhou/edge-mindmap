@@ -120,26 +120,27 @@ function goToLogin() {
 }
 
 .auth-callback-card {
-  background: var(--bg-glass);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   padding: 40px;
   width: 100%;
   max-width: 400px;
   text-align: center;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   color: var(--color-text-main);
 }
 
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--color-accent);
+  border: 3px solid #f3f4f6;
+  border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
   margin: 0 auto 20px;
 }
+
 
 @keyframes spin {
   to {

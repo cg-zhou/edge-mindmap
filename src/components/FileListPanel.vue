@@ -157,29 +157,28 @@ const logout = async () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg-panel);
+  background: #ffffff;
   border-right: 1px solid var(--border-glass);
-  backdrop-filter: blur(20px);
 }
 
 .panel-header {
-  padding: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 16px;
+  border-bottom: 1px solid var(--border-glass);
   flex-shrink: 0;
 }
 
 .btn-new-file {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: var(--color-primary);
-  color: #0f172a;
+  color: #ffffff;
   border: none;
-  border-radius: var(--radius-default);
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -187,9 +186,8 @@ const logout = async () => {
 }
 
 .btn-new-file:hover {
-  background: #f8fafc;
+  background: #0284c7;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.15);
 }
 
 .btn-new-file:active {
@@ -216,28 +214,27 @@ const logout = async () => {
 .file-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .file-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: var(--radius-default);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid transparent;
 }
 
 .file-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: #f3f4f6;
 }
 
 .file-item.active {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: #eff6ff;
+  border-color: #dbeafe;
 }
 
 .file-info {
@@ -250,24 +247,24 @@ const logout = async () => {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-main);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .file-item.active .file-name {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 .file-time {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--color-text-muted);
 }
 
 .file-actions {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -283,8 +280,9 @@ const logout = async () => {
   color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 14px;
-  padding: 6px;
-  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -292,12 +290,12 @@ const logout = async () => {
 }
 
 .btn-rename:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-accent);
+  background: #e5e7eb;
+  color: var(--color-primary);
 }
 
 .btn-delete:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: #fee2e2;
   color: var(--color-danger);
 }
 
@@ -313,13 +311,13 @@ const logout = async () => {
 }
 
 .panel-footer {
-  padding: 16px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  border-top: 1px solid var(--border-glass);
+  background: #f9fafb;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .user-info {
@@ -329,28 +327,26 @@ const logout = async () => {
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   flex-shrink: 0;
   object-fit: cover;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-glass);
 }
 
 .user-avatar-placeholder {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-text-main);
+  background: #e5e7eb;
+  color: #4b5563;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: none;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .user-details {
@@ -360,7 +356,7 @@ const logout = async () => {
 
 .user-name {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-main);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -369,24 +365,21 @@ const logout = async () => {
 
 .btn-logout {
   width: 100%;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  border-radius: var(--radius-default);
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #4b5563;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
 }
 
 .btn-logout:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: var(--color-danger);
 }
 
-.btn-logout:active {
-  transform: translateY(0);
-}
 </style>
