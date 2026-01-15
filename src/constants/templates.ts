@@ -37,10 +37,9 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
           { data: { text: '富文本功能展示', progress: 5 }, children: [
             { data: { text: '优先级图标 (Priority)', priority: 1 }, children: [] },
             { data: { text: '任务进度环 (Progress)', progress: 8 }, children: [] },
-            { data: { text: '资源标签 (Resource)', resource: ['标签1', '标签2'] }, children: [] },
             { data: { text: '备注功能 (Note)', note: '点击右下角查看详情' }, children: [] }
           ]},
-          { data: { text: '视图操作', resource: ['视图'] }, children: [
+          { data: { text: '视图操作' }, children: [
             { data: { text: '鼠标滚轮: 上下滚动' }, children: [] },
             { data: { text: 'Ctrl+滚轮: 缩放画布' }, children: [] },
             { data: { text: '右键拖拽: 移动画布' }, children: [] }
@@ -49,7 +48,7 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
         ]
       },
       template: 'right',
-      theme: 'classic-compact',
+      theme: 'fresh-purple-compat',
       version: '1.4.43'
     }
   },
@@ -64,7 +63,7 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
         data: { text: '项目资产管理' },
         children: [
           { 
-            data: { text: '核心文档', resource: ['重要'], progress: 3 }, 
+            data: { text: '核心文档', progress: 3 }, 
             children: [
               { data: { text: '产品需求文档 (PRD)', hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net' }, children: [] },
               { data: { text: '交互设计稿', priority: 1 }, children: [] },
@@ -72,15 +71,15 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
             ] 
           },
           { 
-            data: { text: '工程代码', resource: ['开发'], progress: 6 }, 
+            data: { text: '工程代码', progress: 6 }, 
             children: [
               { data: { text: '前端仓库 (Edge Mindmap)', priority: 1, hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net' }, children: [] },
-              { data: { text: '后端 API 全集', resource: ['API'] }, children: [] },
+              { data: { text: '后端 API 全集' }, children: [] },
               { data: { text: '数据库迁移脚本' }, children: [] }
             ] 
           },
           { 
-            data: { text: '基础设施', resource: ['运维'] }, 
+            data: { text: '基础设施' }, 
             children: [
               { data: { text: 'ESA 边缘服务部署', progress: 10 }, children: [] },
               { data: { text: '域名解析设置' }, children: [] }
@@ -89,7 +88,7 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
         ]
       },
       template: 'filetree',
-      theme: 'fresh-purple-compat',
+      theme: 'fresh-green-compat',
       version: '1.4.43'
     }
   },
@@ -117,12 +116,12 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
           { 
             data: { text: '网络/环境', priority: 2 }, 
             children: [
-              { data: { text: 'CDN 节点缓存未命中', resource: ['运维'] }, children: [] },
+              { data: { text: 'CDN 节点缓存未命中' }, children: [] },
               { data: { text: 'API 首字节延迟 (TTFB)', note: '需检查边缘函数耗时', hyperlink: 'https://edge-mindmap.79f54793.er.aliyun-esa.net' }, children: [] }
             ] 
           },
           { 
-            data: { text: '第三方插件', resource: ['工具'] }, 
+            data: { text: '第三方插件' }, 
             children: [
               { data: { text: '统计脚本阻塞渲染', progress: 1 }, children: [] },
               { data: { text: '广告脚本检测' }, children: [] }
@@ -131,7 +130,7 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
         ]
       },
       template: 'fish-bone',
-      theme: 'snow-compact',
+      theme: 'fresh-blue-compat',
       version: '1.4.43'
     }
   }

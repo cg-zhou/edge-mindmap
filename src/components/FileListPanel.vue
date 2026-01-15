@@ -162,7 +162,7 @@ const logout = async () => {
 }
 
 .panel-header {
-  padding: 16px;
+  padding: 10px;
   border-bottom: 1px solid var(--border-glass);
   flex-shrink: 0;
 }
@@ -313,7 +313,6 @@ const logout = async () => {
 .panel-footer {
   padding: 16px;
   border-top: 1px solid var(--border-glass);
-  background: #f9fafb;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
