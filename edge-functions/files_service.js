@@ -9,28 +9,146 @@
  */
 
 const CONFIG = {
-  JWT_SECRET: 'your-secret-key',
-  FRONTEND_URL: 'https://your-pages-domain.com',
-  EDGEKV_NAMESPACE: 'mindmap-storage'
+  JWT_SECRET: 'YOUR_JWT_SECRET_KEY',
+  FRONTEND_URL: 'https://your-domain.com',
+  EDGEKV_NAMESPACE: 'mindmap-storage',
+  // 中心强一致存储配置
+  ESA_STORE_ENDPOINT: 'https://your-api-gateway.com/api/esa-store',
+  ESA_STORE_AUTH_CODE: 'YOUR_ESA_STORE_AUTH_CODE'
 };
 
-// ==================== EdgeKV 操作 ====================
+// ==================== 存储服务 (ESA Cache + Center Source) ====================
 class KVService {
-  constructor(namespace) {
-    this.kv = new EdgeKV({ namespace });
+  constructor() {
+    this.kv = new EdgeKV({ namespace: CONFIG.EDGEKV_NAMESPACE });
+  }
+
+  // 内部工具：安全化 Key 命名 (替换冒号为连字符)
+  _s(key) {
+    return key.replace(/:/g, '-');
   }
 
   async get(key) {
-    const value = await this.kv.get(key, { type: 'text' });
-    return value ? JSON.parse(value) : null;
+    const safeKey = this._s(key);
+    try {
+      // 1. 尝试从 EdgeKV 获取缓存内容
+      const cachedStr = await this.kv.get(safeKey, { type: 'text' }).catch(() => null);
+      const cached = cachedStr ? JSON.parse(cachedStr) : null;
+      
+      const url = new URL(CONFIG.ESA_STORE_ENDPOINT);
+      url.searchParams.append('key', safeKey);
+      url.searchParams.append('authCode', CONFIG.ESA_STORE_AUTH_CODE);
+      if (cached && cached.updatedAt) {
+        url.searchParams.append('cacheTimestamp', cached.updatedAt);
+      }
+
+      // 2. 带着缓存时间戳询问中心服务器
+      const resp = await fetch(url.toString());
+      
+      // 204 说明数据没变，直接用缓存
+      if (resp.status === 204) {
+        return cached ? cached.value : null;
+      }
+
+      // 404 处理：如果中心没有但边缘有，执行迁移逻辑
+      if (resp.status === 404) {
+        if (cached && cached.value) {
+          console.log(`[Migration] Key ${safeKey} found in EdgeKV but not in center. Migrating...`);
+          await this.set(key, cached.value).catch(e => console.error('Migration failed:', e));
+          return cached.value;
+        }
+        return null;
+      }
+
+      const result = await resp.json();
+      
+      // 处理错误状态
+      if (resp.status >= 400) {
+        throw new Error(`Center Store Error (${resp.status}): ${result.errorMessage || JSON.stringify(result)}`);
+      }
+
+      // 处理 "modified: false" 的情况
+      if (result && result.modified === false && cached) {
+        return cached.value;
+      }
+
+      if (resp.status === 200) {
+        // 反序列化中心服务器返回的字符串
+        let finalValue = result.value;
+        try {
+          if (typeof finalValue === 'string' && (finalValue.startsWith('{') || finalValue.startsWith('['))) {
+            finalValue = JSON.parse(finalValue);
+          }
+        } catch (e) {
+          console.warn(`Failed to parse value for ${safeKey}, using raw value`);
+        }
+
+        // 更新缓存并返回新数据
+        const dataToCache = {
+          value: finalValue,
+          updatedAt: result.timestamp
+        };
+        // 异步更新缓存，不阻塞返回
+        this.kv.put(safeKey, JSON.stringify(dataToCache)).catch(() => {});
+        return finalValue;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`KV Get Error [${safeKey}]:`, error.message);
+      // 网络异常或 500 时落回缓存以保证可用性
+      const cachedStr = await this.kv.get(safeKey, { type: 'text' }).catch(() => null);
+      if (cachedStr) {
+        const cached = JSON.parse(cachedStr);
+        return cached.value;
+      }
+      throw error;
+    }
   }
 
   async set(key, value) {
-    await this.kv.put(key, JSON.stringify(value), { expiration: Math.floor(Date.now() / 1000) + 31536000 });
+    const safeKey = this._s(key);
+    try {
+      // 序列化 value：中心服务器只接受字符串
+      const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+
+      // 1. 强一致性写入中心服务器
+      const url = new URL(CONFIG.ESA_STORE_ENDPOINT);
+      url.searchParams.append('key', safeKey);
+      url.searchParams.append('authCode', CONFIG.ESA_STORE_AUTH_CODE);
+
+      const resp = await fetch(url.toString(), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: stringValue })
+      });
+
+      const result = await resp.json();
+
+      if (resp.status < 200 || resp.status >= 300) {
+        throw new Error(`Center Store Set Failed (${resp.status}): ${result.errorMessage || JSON.stringify(result)}`);
+      }
+
+      // 2. 写入成功后同步更新边缘缓存
+      const dataToCache = {
+        value: value,
+        updatedAt: result.timestamp
+      };
+      await this.kv.put(safeKey, JSON.stringify(dataToCache), { 
+        expiration: Math.floor(Date.now() / 1000) + 31536000 
+      });
+      
+      return result;
+    } catch (error) {
+      console.error(`KV Set Error [${safeKey}]:`, error.message);
+      throw error;
+    }
   }
 
   async delete(key) {
-    await this.kv.delete(key);
+    const safeKey = this._s(key);
+    await this.set(key, null);
+    await this.kv.delete(safeKey);
   }
 }
 
@@ -139,148 +257,156 @@ async function handleRequest(request) {
     return corsResponse(origin);
   }
 
-  // 验证 token
-  const token = extractToken(request);
-  if (!token) {
-    return response({ error: 'Unauthorized', message: 'Missing token' }, 401, origin);
-  }
-
-  const tokenData = await verifyToken(token);
-  if (!tokenData.valid) {
-    return response({ error: 'Unauthorized', message: tokenData.error }, 401, origin);
-  }
-
-  const userId = tokenData.userId;
-
-  const kvService = new KVService(CONFIG.EDGEKV_NAMESPACE);
-
-  // ==================== GET /api/files - 获取所有文件和 fileList ====================
-  if (pathname === '/api/files' && method === 'GET') {
-    const fileList = await kvService.get(`fileList:${userId}`) || { files: [], updatedAt: 0 };
-    return response({ files: fileList.files || [], updatedAt: fileList.updatedAt || 0 }, 200, origin);
-  }
-
-  // ==================== POST /api/files - 创建文件 ====================
-  if (pathname === '/api/files' && method === 'POST') {
-    const body = await request.json();
-    const { file, fileList } = body;
-
-    if (!file || !file.name || file.content === undefined || !file.updatedAt) {
-      return response({ error: 'Invalid file data' }, 422, origin);
+  try {
+    // 验证 token
+    const token = extractToken(request);
+    if (!token) {
+      return response({ error: 'Unauthorized', message: 'Missing token' }, 401, origin);
     }
 
-    if (!fileList || !Array.isArray(fileList.files) || !fileList.updatedAt) {
-      return response({ error: 'Invalid fileList data' }, 422, origin);
+    const tokenData = await verifyToken(token);
+    if (!tokenData.valid) {
+      return response({ error: 'Unauthorized', message: tokenData.error }, 401, origin);
     }
 
-    // 检查并存储文件
-    const existingFile = await kvService.get(`files:${userId}:${file.id}`);
-    if (!existingFile || file.updatedAt > existingFile.updatedAt) {
-      await kvService.set(`files:${userId}:${file.id}`, {
-        id: file.id,
+    const userId = tokenData.userId;
+
+    const kvService = new KVService();
+
+    // ==================== GET /api/files - 获取所有文件和 fileList ====================
+    if (pathname === '/api/files' && method === 'GET') {
+      const fileList = await kvService.get(`fileList:${userId}`) || { files: [], updatedAt: 0 };
+      return response({ files: fileList.files || [], updatedAt: fileList.updatedAt || 0 }, 200, origin);
+    }
+
+    // ==================== POST /api/files - 创建文件 ====================
+    if (pathname === '/api/files' && method === 'POST') {
+      const body = await request.json();
+      const { file, fileList } = body;
+
+      if (!file || !file.name || file.content === undefined || !file.updatedAt) {
+        return response({ error: 'Invalid file data' }, 422, origin);
+      }
+
+      if (!fileList || !Array.isArray(fileList.files) || !fileList.updatedAt) {
+        return response({ error: 'Invalid fileList data' }, 422, origin);
+      }
+
+      // 检查并存储文件
+      const existingFile = await kvService.get(`files:${userId}:${file.id}`);
+      if (!existingFile || file.updatedAt > existingFile.updatedAt) {
+        await kvService.set(`files:${userId}:${file.id}`, {
+          id: file.id,
+          userId,
+          name: file.name,
+          content: file.content,
+          updatedAt: file.updatedAt,
+          _deleted: file._deleted || false
+        });
+      }
+
+      // 检查并存储 fileList
+      const existingFileList = await kvService.get(`fileList:${userId}`);
+      const existingUpdatedAt = existingFileList?.updatedAt || 0;
+      if (!existingFileList || fileList.updatedAt > existingUpdatedAt) {
+        await kvService.set(`fileList:${userId}`, fileList);
+      }
+
+      return response({ success: true }, 201, origin);
+    }
+
+    // ==================== PUT /api/files/:fileId - 更新文件（直接保存，不做冲突检测） ====================
+    if (pathname.startsWith('/api/files/') && method === 'PUT') {
+      const fileId = pathname.split('/')[3];
+      const body = await request.json();
+      const { file, fileList } = body;
+
+      if (!file || !file.updatedAt) {
+        return response({ error: 'Invalid file data' }, 422, origin);
+      }
+
+      if (!fileList || !fileList.updatedAt) {
+        return response({ error: 'Invalid fileList data' }, 422, origin);
+      }
+
+      // 直接保存，不检查存在性，避免边缘存储延迟问题
+      await kvService.set(`files:${userId}:${fileId}`, {
+        id: fileId,
         userId,
         name: file.name,
         content: file.content,
         updatedAt: file.updatedAt,
         _deleted: file._deleted || false
       });
+
+      // 存储 fileList
+      const existingFileList = await kvService.get(`fileList:${userId}`);
+      const existingUpdatedAt = existingFileList?.updatedAt || 0;
+      if (!existingFileList || fileList.updatedAt > existingUpdatedAt) {
+        await kvService.set(`fileList:${userId}`, fileList);
+      }
+
+      return response({ success: true }, 200, origin);
     }
 
-    // 检查并存储 fileList
-    const existingFileList = await kvService.get(`fileList:${userId}`);
-    const existingUpdatedAt = existingFileList?.updatedAt || 0;
-    if (!existingFileList || fileList.updatedAt > existingUpdatedAt) {
-      await kvService.set(`fileList:${userId}`, fileList);
+    // ==================== DELETE /api/files/:fileId - 删除文件（直接标记删除，不做冲突检测） ====================
+    if (pathname.startsWith('/api/files/') && method === 'DELETE') {
+      const fileId = pathname.split('/')[3];
+      const body = await request.json() || {};
+      const { file, fileList } = body;
+
+      if (!file || !file.updatedAt) {
+        return response({ error: 'Invalid file data' }, 422, origin);
+      }
+
+      if (!fileList || !fileList.updatedAt) {
+        return response({ error: 'Invalid fileList data' }, 422, origin);
+      }
+
+      // 直接标记删除，不检查存在性，避免边缘存储延迟问题
+      await kvService.set(`files:${userId}:${fileId}`, {
+        id: fileId,
+        userId,
+        name: file.name,
+        content: file.content,
+        updatedAt: file.updatedAt,
+        _deleted: true
+      });
+
+      // 存储 fileList
+      const existingFileList = await kvService.get(`fileList:${userId}`);
+      const existingUpdatedAt = existingFileList?.updatedAt || 0;
+      if (!existingFileList || fileList.updatedAt > existingUpdatedAt) {
+        await kvService.set(`fileList:${userId}`, fileList);
+      }
+
+      return response({ success: true }, 200, origin);
     }
 
-    return response({ success: true }, 201, origin);
+    // ==================== GET /api/files/:fileId - 获取单个文件 ====================
+    if (pathname.startsWith('/api/files/') && method === 'GET') {
+      const fileId = pathname.split('/')[3];
+      const file = await kvService.get(`files:${userId}:${fileId}`);
+
+      if (!file) {
+        return response({ error: 'File not found' }, 404, origin);
+      }
+
+      if (file.userId !== userId) {
+        return response({ error: 'Forbidden' }, 403, origin);
+      }
+
+      return response(file, 200, origin);
+    }
+
+    return response({ error: 'Not found' }, 404, origin);
+  } catch (error) {
+    console.error('Files Error:', error);
+    return response({ 
+      error: error.message || 'Internal server error',
+      stack: error.stack
+    }, 500, origin);
   }
-
-  // ==================== PUT /api/files/:fileId - 更新文件（直接保存，不做冲突检测） ====================
-  if (pathname.startsWith('/api/files/') && method === 'PUT') {
-    const fileId = pathname.split('/')[3];
-    const body = await request.json();
-    const { file, fileList } = body;
-
-    if (!file || !file.updatedAt) {
-      return response({ error: 'Invalid file data' }, 422, origin);
-    }
-
-    if (!fileList || !fileList.updatedAt) {
-      return response({ error: 'Invalid fileList data' }, 422, origin);
-    }
-
-    // 直接保存，不检查存在性，避免边缘存储延迟问题
-    await kvService.set(`files:${userId}:${fileId}`, {
-      id: fileId,
-      userId,
-      name: file.name,
-      content: file.content,
-      updatedAt: file.updatedAt,
-      _deleted: file._deleted || false
-    });
-
-    // 存储 fileList
-    const existingFileList = await kvService.get(`fileList:${userId}`);
-    const existingUpdatedAt = existingFileList?.updatedAt || 0;
-    if (!existingFileList || fileList.updatedAt > existingUpdatedAt) {
-      await kvService.set(`fileList:${userId}`, fileList);
-    }
-
-    return response({ success: true }, 200, origin);
-  }
-
-  // ==================== DELETE /api/files/:fileId - 删除文件（直接标记删除，不做冲突检测） ====================
-  if (pathname.startsWith('/api/files/') && method === 'DELETE') {
-    const fileId = pathname.split('/')[3];
-    const body = await request.json() || {};
-    const { file, fileList } = body;
-
-    if (!file || !file.updatedAt) {
-      return response({ error: 'Invalid file data' }, 422, origin);
-    }
-
-    if (!fileList || !fileList.updatedAt) {
-      return response({ error: 'Invalid fileList data' }, 422, origin);
-    }
-
-    // 直接标记删除，不检查存在性，避免边缘存储延迟问题
-    await kvService.set(`files:${userId}:${fileId}`, {
-      id: fileId,
-      userId,
-      name: file.name,
-      content: file.content,
-      updatedAt: file.updatedAt,
-      _deleted: true
-    });
-
-    // 存储 fileList
-    const existingFileList = await kvService.get(`fileList:${userId}`);
-    const existingUpdatedAt = existingFileList?.updatedAt || 0;
-    if (!existingFileList || fileList.updatedAt > existingUpdatedAt) {
-      await kvService.set(`fileList:${userId}`, fileList);
-    }
-
-    return response({ success: true }, 200, origin);
-  }
-
-  // ==================== GET /api/files/:fileId - 获取单个文件 ====================
-  if (pathname.startsWith('/api/files/') && method === 'GET') {
-    const fileId = pathname.split('/')[3];
-    const file = await kvService.get(`files:${userId}:${fileId}`);
-
-    if (!file) {
-      return response({ error: 'File not found' }, 404, origin);
-    }
-
-    if (file.userId !== userId) {
-      return response({ error: 'Forbidden' }, 403, origin);
-    }
-
-    return response(file, 200, origin);
-  }
-
-  return response({ error: 'Not found' }, 404, origin);
 }
 
 export default {

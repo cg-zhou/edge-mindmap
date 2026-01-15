@@ -5,37 +5,150 @@
 
 // ==================== 配置 ====================
 const CONFIG = {
-  // 在阿里云边缘函数中，环境变量通过全局对象获取
-  MICROSOFT_CLIENT_ID: '',
-  MICROSOFT_CLIENT_SECRET: '',
-  JWT_SECRET: 'your-secret-key',
-  FRONTEND_URL: 'https://your-pages-domain.com',
-  EDGEKV_NAMESPACE: 'mindmap-storage'
+  // 在阿里云边缘函数中，建议通过边缘函数环境变量获取敏感信息
+  MICROSOFT_CLIENT_ID: 'YOUR_MICROSOFT_CLIENT_ID',
+  MICROSOFT_CLIENT_SECRET: 'YOUR_MICROSOFT_CLIENT_SECRET',
+  JWT_SECRET: 'YOUR_JWT_SECRET_KEY',
+  FRONTEND_URL: 'https://your-domain.com',
+  EDGEKV_NAMESPACE: 'mindmap-storage',
+  // 中心强一致存储配置
+  ESA_STORE_ENDPOINT: 'https://your-api-gateway.com/api/esa-store',
+  ESA_STORE_AUTH_CODE: 'YOUR_ESA_STORE_AUTH_CODE'
 };
 
-// ==================== EdgeKV 操作 ====================
+// ==================== 存储服务 (ESA Cache + Center Source) ====================
 class KVService {
-  constructor(namespace) {
-    this.kv = new EdgeKV({ namespace });
+  constructor() {
+    this.kv = new EdgeKV({ namespace: CONFIG.EDGEKV_NAMESPACE });
+  }
+
+  // 内部工具：安全化 Key 命名 (替换冒号为连字符)
+  _s(key) {
+    return key.replace(/:/g, '-');
   }
 
   async get(key) {
+    const safeKey = this._s(key);
     try {
-      const value = await this.kv.get(key, { type: 'text' });
-      return value ? JSON.parse(value) : null;
-    } catch (error) {
+      // 1. 尝试从 EdgeKV 获取缓存内容
+      const cachedStr = await this.kv.get(safeKey, { type: 'text' }).catch(() => null);
+      const cached = cachedStr ? JSON.parse(cachedStr) : null;
+      
+      const url = new URL(CONFIG.ESA_STORE_ENDPOINT);
+      url.searchParams.append('key', safeKey);
+      url.searchParams.append('authCode', CONFIG.ESA_STORE_AUTH_CODE);
+      if (cached && cached.updatedAt) {
+        url.searchParams.append('cacheTimestamp', cached.updatedAt);
+      }
+
+      // 2. 带着缓存时间戳询问中心服务器
+      const resp = await fetch(url.toString());
+      
+      // 204 说明数据没变，直接用缓存
+      if (resp.status === 204) {
+        return cached ? cached.value : null;
+      }
+
+      // 404 处理：如果中心没有但边缘有，执行迁移逻辑
+      if (resp.status === 404) {
+        if (cached && cached.value) {
+          console.log(`[Migration] Key ${safeKey} found in EdgeKV but not in center. Migrating...`);
+          await this.set(key, cached.value).catch(e => console.error('Migration failed:', e));
+          return cached.value;
+        }
+        return null;
+      }
+
+      const result = await resp.json();
+      
+      // 处理错误状态
+      if (resp.status >= 400) {
+        throw new Error(`Center Store Error (${resp.status}): ${result.errorMessage || JSON.stringify(result)}`);
+      }
+
+      // 处理 "modified: false" 的情况
+      if (result && result.modified === false && cached) {
+        return cached.value;
+      }
+
+      if (resp.status === 200) {
+        // 反序列化中心服务器返回的字符串
+        let finalValue = result.value;
+        try {
+          if (typeof finalValue === 'string' && (finalValue.startsWith('{') || finalValue.startsWith('['))) {
+            finalValue = JSON.parse(finalValue);
+          }
+        } catch (e) {
+          console.warn(`Failed to parse value for ${safeKey}, using raw value`);
+        }
+
+        // 更新缓存并返回新数据
+        const dataToCache = {
+          value: finalValue,
+          updatedAt: result.timestamp
+        };
+        // 异步更新缓存，不阻塞返回
+        this.kv.put(safeKey, JSON.stringify(dataToCache)).catch(() => {});
+        return finalValue;
+      }
+      
       return null;
+    } catch (error) {
+      console.error(`KV Get Error [${safeKey}]:`, error.message);
+      // 网络异常或 500 时落回缓存以保证可用性
+      const cachedStr = await this.kv.get(safeKey, { type: 'text' }).catch(() => null);
+      if (cachedStr) {
+        const cached = JSON.parse(cachedStr);
+        return cached.value;
+      }
+      throw error;
     }
   }
 
   async set(key, value, ttl = 31536000) {
-    await this.kv.put(key, JSON.stringify(value), { 
-      expiration: Math.floor(Date.now() / 1000) + ttl 
-    });
+    const safeKey = this._s(key);
+    try {
+      // 序列化 value：中心服务器只接受字符串
+      const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+
+      // 1. 强一致性写入中心服务器
+      const url = new URL(CONFIG.ESA_STORE_ENDPOINT);
+      url.searchParams.append('key', safeKey);
+      url.searchParams.append('authCode', CONFIG.ESA_STORE_AUTH_CODE);
+
+      const resp = await fetch(url.toString(), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: stringValue })
+      });
+
+      const result = await resp.json();
+
+      if (resp.status < 200 || resp.status >= 300) {
+        throw new Error(`Center Store Set Failed (${resp.status}): ${result.errorMessage || JSON.stringify(result)}`);
+      }
+
+      // 2. 写入成功后同步更新边缘缓存（缓存原始对象，减少下一次读取的解析开销）
+      const dataToCache = {
+        value: value,
+        updatedAt: result.timestamp
+      };
+      await this.kv.put(safeKey, JSON.stringify(dataToCache), { 
+        expiration: Math.floor(Date.now() / 1000) + ttl 
+      });
+      
+      return result;
+    } catch (error) {
+      console.error(`KV Set Error [${safeKey}]:`, error.message);
+      throw error;
+    }
   }
 
   async delete(key) {
-    await this.kv.delete(key);
+    const safeKey = this._s(key);
+    // 在中心服务器标记为空或删除
+    await this.set(key, null);
+    await this.kv.delete(safeKey);
   }
 }
 
@@ -283,7 +396,7 @@ async function handleRequest(request) {
     return corsResponse(requestOrigin);
   }
 
-  const kvService = new KVService(CONFIG.EDGEKV_NAMESPACE);
+  const kvService = new KVService();
 
   try {
     // 游客登录（共享账户）
@@ -384,7 +497,11 @@ async function handleRequest(request) {
     return jsonResponse({ error: 'Not found' }, 404, requestOrigin);
   } catch (error) {
     console.error('Auth Error:', error);
-    return jsonResponse({ error: 'Internal server error' }, 500, requestOrigin);
+    // 返回具体错误信息，方便调试
+    return jsonResponse({ 
+      error: error.message || 'Internal server error',
+      stack: error.stack 
+    }, 500, requestOrigin);
   }
 }
 
