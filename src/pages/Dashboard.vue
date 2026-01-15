@@ -39,7 +39,7 @@
         </div>
 
         <!-- 编辑器 -->
-        <MindElixirEditor ref="editorRef" v-else v-model="currentData" />
+        <KityMinderEditor ref="editorRef" v-else v-model="currentData" />
       </div>
     </main>
 
@@ -54,8 +54,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useFileStore } from '@/stores/files'
 import { dialog, file } from '@/utils/message'
-import MindElixir from 'mind-elixir'
-import MindElixirEditor from '@/components/MindElixirEditor.vue'
+import KityMinderEditor from '@/components/KityMinderEditor.vue'
 import FileListPanel from '@/components/FileListPanel.vue'
 
 const router = useRouter()
@@ -107,15 +106,19 @@ const handleSelectFile = async (fileId: string) => {
     if (fileStore.currentFile) {
       // 确保数据格式正确
       const content = fileStore.currentFile.content
-      // 检查是否是有效的 MindmapContent（包含 nodeData 属性）
+      // 检查是否是有效的 KityMinder 内容（包含 root 属性）
       console.log(`[Dashboard] About to assign currentData.value, isLoadingFile=${isLoadingFile.value}`)
-      if (content && typeof content === 'object' && 'nodeData' in content) {
-        console.log(`[Dashboard] Assigning valid MindmapContent`)
+      if (content && typeof content === 'object' && 'root' in content) {
+        console.log(`[Dashboard] Assigning valid KityMinder content`)
         currentData.value = content
       } else {
         // 使用默认数据结构
-        console.log(`[Dashboard] Assigning default MindElixir`)
-        currentData.value = MindElixir.new(selectedFile.value?.title || '新思维导图')
+        console.log(`[Dashboard] Assigning default KityMinder`)
+        currentData.value = {
+          root: { data: { text: selectedFile.value?.title || '新思维导图' }, children: [] },
+          template: 'default',
+          theme: 'fresh-blue'
+        }
       }
       console.log(`[Dashboard] currentData assigned, isLoadingFile=${isLoadingFile.value}`)
     }
@@ -194,8 +197,8 @@ const handleSave = async () => {
   if (!selectedFile.value) return
 
   try {
-    // 关键：从编辑器直接获取最新数据，确保保存的是编辑器中的最新状态
-    const latestData = editorRef.value?.getData() || currentData.value
+    // 既然使用了 v-model，currentData.value 已经是最新数据
+    const latestData = currentData.value
     
     await fileStore.saveFile(selectedFile.value.id, latestData)
     hasChanges.value = false
@@ -220,7 +223,7 @@ const triggerAutoSave = async () => {
     if (hasChanges.value && selectedFile.value) {
       try {
         console.log(`[Dashboard] Starting auto-save for file: ${selectedFile.value.id}`)
-        const latestData = editorRef.value?.getData() || currentData.value
+        const latestData = currentData.value
         await fileStore.saveFile(selectedFile.value.id, latestData)
         hasChanges.value = false
         
@@ -319,7 +322,7 @@ onBeforeUnmount(() => {
   
   // 最后的机会保存未保存的改动
   if (hasChanges.value && selectedFile.value) {
-    const latestData = editorRef.value?.getData() || currentData.value
+    const latestData = currentData.value
     fileStore.saveFile(selectedFile.value.id, latestData).catch(err => {
       console.error('卸载时保存失败:', err)
     })

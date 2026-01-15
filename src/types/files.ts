@@ -2,26 +2,22 @@
  * 文件管理相关类型定义
  */
 
-export interface MindmapNode {
-  id: string
-  topic: string
-  children?: MindmapNode[]
-  [key: string]: any
+export interface KMNode {
+  data: {
+    text: string
+    id?: string
+    priority?: number
+    progress?: number
+    [key: string]: any
+  }
+  children?: KMNode[]
 }
 
 export interface MindmapContent {
-  nodeData: MindmapNode
-  arrows: any[]
-  summaries: any[]
-  direction: number
-  theme?: {
-    name: string
-    type: string
-    palette: string[]
-    cssVar: {
-      [key: string]: string
-    }
-  }
+  root: KMNode
+  template?: string
+  theme?: string
+  version?: string
 }
 
 export interface File {

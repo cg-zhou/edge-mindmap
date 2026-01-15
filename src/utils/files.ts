@@ -515,7 +515,7 @@ class FileService {
            userId: user.id,
            title: fileItem.title,
            // 使用最小化的空内容，因为我们只是要标记删除
-           content: { nodeData: { id: 'root', topic: 'Deleted' } } as any,
+           content: { root: { data: { text: 'Deleted' }, children: [] } } as any,
            createdAt: fileItem.createdAt,
            updatedAt: fileItem.updatedAt,
            _deleted: false

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>KityMinder Editor - Iframe Integration</title>
+
+	<link href="favicon.ico" type="image/x-icon" rel="shortcut icon">
+
+	<!-- 核心依赖 CSS -->
+	<link rel="stylesheet" href="lib/bootstrap.css" />
+	<link rel="stylesheet" href="lib/codemirror.css" />
+	<link rel="stylesheet" href="lib/hotbox.css" />
+	<link rel="stylesheet" href="lib/kityminder.core.css" />
+	<link rel="stylesheet" href="lib/color-picker.min.css" />
+	<link rel="stylesheet" href="kityminder.editor.min.css">
+
+	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+			height: 100%;
+			overflow: hidden;
+		}
+		div.minder-editor-container {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 0;
+			right: 0;
+		}
+		/* 隐藏原有的标题栏（可选） */
+		h1.editor-title {
+			display: none;
+		}
+		/* 隐藏图片以及超链接相关的按钮组 */
+        /* .image-btn 和 .hyperlink 是生成的按钮类名 */
+        /* 我们直接隐藏它们的父级容器 btn-group-vertical */
+        /* .btn-group-vertical:has(.hyperlink),  */
+        .btn-group-vertical:has(.image-btn) {
+            display: none !important;
+        }
+	</style>
+</head>
+<body ng-app="kityminderDemo" ng-controller="MainController">
+<kityminder-editor on-init="initEditor(editor, minder)"></kityminder-editor>
+
+<!-- 核心依赖 JS -->
+<script src="lib/jquery.js"></script>
+<script src="lib/bootstrap.js"></script>
+<script src="lib/angular.js"></script>
+<script src="lib/ui-bootstrap-tpls.js"></script>
+<script src="lib/codemirror.js"></script>
+<script src="lib/xml.js"></script>
+<script src="lib/javascript.js"></script>
+<script src="lib/css.js"></script>
+<script src="lib/htmlmixed.js"></script>
+<script src="lib/markdown.js"></script>
+<script src="lib/overlay.js"></script>
+<script src="lib/gfm.js"></script>
+<script src="lib/ui-codemirror.js"></script>
+<!-- 如果 marked.js 丢失，请从此下载并放入 lib/ : https://cdn.jsdelivr.net/npm/marked/marked.min.js -->
+<script src="lib/marked.js"></script>
+<script src="lib/kity.min.js"></script>
+<script src="lib/hotbox.js"></script>
+<script src="lib/json-diff.js"></script>
+<script src="lib/kityminder.core.min.js"></script>
+<script src="lib/color-picker.min.js"></script>
+
+<script src="kityminder.editor.min.js"></script>
+
+<script>
+	angular.module('kityminderDemo', ['kityminderEditor'])
+			.config(function (configProvider) {
+				// 如果有图片上传需求，请取消下方注释并配置地址
+				// configProvider.set('imageUpload', '../server/imageUpload.php');
+			})
+			.controller('MainController', function($scope) {
+				$scope.initEditor = function(editor, minder) {
+					window.editor = editor;
+					window.minder = minder;
+
+					// 告知父窗口：编辑器已就绪
+					if (window.parent !== window) {
+						window.parent.postMessage({ type: 'ready' }, '*');
+					}
+
+					// 监听内容变化，实时向父窗口同步数据
+					minder.on('contentchange', function() {
+						var data = minder.exportJson();
+						window.parent.postMessage({ 
+							type: 'exportJson', 
+							data: data 
+						}, '*');
+					});
+				};
+
+				// 监听父窗口传来的操作指令
+				window.addEventListener('message', function(event) {
+					var res = event.data;
+					if (res.type === 'importJson') {
+						window.minder.importJson(res.data);
+					} else if (res.type === 'exportJson') {
+						var data = window.minder.exportJson();
+						window.parent.postMessage({ type: 'exportJson', data: data }, '*');
+					}
+				});
+			});
+</script>
+
+</body>
+</html>

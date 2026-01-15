@@ -1,8 +1,8 @@
 /**
- * 思维导图模板定义
+ * 思维导图模板定义 (KityMinder 格式)
  */
 
-import type { MindmapContent } from '@/types/files'
+import type { MindmapContent, KMNode } from '@/types/files'
 
 export interface MindmapTemplate {
   id: string           // 模板ID
@@ -12,6 +12,12 @@ export interface MindmapTemplate {
   content: MindmapContent
 }
 
+// 辅助函数，快速创建节点内容
+const createNode = (text: string, children: KMNode[] = []): KMNode => ({
+  data: { text },
+  children
+})
+
 // 4 个预置模板
 export const TEMPLATES: Record<string, MindmapTemplate> = {
   blank: {
@@ -20,15 +26,14 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
     description: '从空白开始',
     icon: '✨',
     content: {
-      nodeData: {
-        id: 'root_blank',
-        topic: '中心主题',
+      root: {
+        data: { text: '中心主题' },
         children: []
       },
-      arrows: [],
-      summaries: [],
-      direction: 1
-    } as MindmapContent
+      template: 'default',
+      theme: 'fresh-blue',
+      version: '1.4.43'
+    }
   },
 
   planning: {
@@ -37,59 +42,31 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
     description: '设计→开发→测试→发布',
     icon: '📋',
     content: {
-      nodeData: {
-        id: 'root_planning',
-        topic: '🚀 项目计划',
-        children: [
-          { 
-            id: 'node_req', 
-            topic: '📅 需求分析', 
-            children: [
-              { id: 'node_req_user', topic: '用户访谈', children: [] },
-              { id: 'node_req_doc', topic: '需求文档', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_design', 
-            topic: '🎨 系统设计', 
-            children: [
-              { id: 'node_design_ui', topic: 'UI/UX 设计', children: [] },
-              { id: 'node_design_arch', topic: '架构设计', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_dev', 
-            topic: '💻 开发实现', 
-            children: [
-              { id: 'node_dev_fe', topic: '前端开发', children: [] },
-              { id: 'node_dev_be', topic: '后端开发', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_test', 
-            topic: '🧪 测试验证', 
-            children: [
-              { id: 'node_test_unit', topic: '单元测试', children: [] },
-              { id: 'node_test_uat', topic: '验收测试', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_release', 
-            topic: '🚀 发布上线', 
-            children: [
-              { id: 'node_release_prod', topic: '正式上线', children: [] }
-            ] 
-          }
-        ]
-      },
-      arrows: [
-        { id: 'arrow_req_test', label: '验证依据', from: 'node_req_doc', to: 'node_test_uat', delta1: {x: 0, y: 0}, delta2: {x: 0, y: 0} }
-      ],
-      summaries: [
-        { id: 'sum_dev', parent: 'node_dev', start: 0, end: 1, label: '核心开发' }
-      ],
-      direction: 1
-    } as MindmapContent
+      root: createNode('🚀 项目计划', [
+        createNode('📅 需求分析', [
+          createNode('用户访谈'),
+          createNode('需求文档')
+        ]),
+        createNode('🎨 系统设计', [
+          createNode('UI/UX 设计'),
+          createNode('架构设计')
+        ]),
+        createNode('💻 开发实现', [
+          createNode('前端开发'),
+          createNode('后端开发')
+        ]),
+        createNode('🧪 测试验证', [
+          createNode('单元测试'),
+          createNode('验收测试')
+        ]),
+        createNode('🚀 发布上线', [
+          createNode('正式上线')
+        ])
+      ]),
+      template: 'default',
+      theme: 'fresh-blue',
+      version: '1.4.43'
+    }
   },
 
   meeting: {
@@ -98,59 +75,31 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
     description: '议题→参与者→讨论→决议',
     icon: '📝',
     content: {
-      nodeData: {
-        id: 'root_meeting',
-        topic: '📝 会议记录',
-        children: [
-          { 
-            id: 'node_agenda', 
-            topic: '🎯 议题', 
-            children: [
-              { id: 'node_agenda_1', topic: '产品进度回顾', children: [] },
-              { id: 'node_agenda_2', topic: '下季度规划', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_attendees', 
-            topic: '👥 参与者', 
-            children: [
-              { id: 'node_attendee_1', topic: '主持人: Alex', children: [] },
-              { id: 'node_attendee_2', topic: '记录人: Sam', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_discuss', 
-            topic: '💬 讨论内容', 
-            children: [
-              { id: 'node_discuss_tech', topic: '新技术栈选型', children: [] },
-              { id: 'node_discuss_risk', topic: '风险评估', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_decision', 
-            topic: '✅ 主要决议', 
-            children: [
-              { id: 'node_decision_vue', topic: '确认采用 Vue 3', children: [] },
-              { id: 'node_decision_share', topic: '每周技术分享', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_todo', 
-            topic: '📌 待办事项', 
-            children: [
-              { id: 'node_todo_1', topic: '@Alex 整理文档', children: [] }
-            ] 
-          }
-        ]
-      },
-      arrows: [
-        { id: 'arrow_discuss_decision', label: '产出', from: 'node_discuss_tech', to: 'node_decision_vue', delta1: {x: 0, y: 0}, delta2: {x: 0, y: 0} }
-      ],
-      summaries: [
-        { id: 'sum_decision', parent: 'node_decision', start: 0, end: 1, label: '达成一致' }
-      ],
-      direction: 1
-    } as MindmapContent
+      root: createNode('📝 会议记录', [
+        createNode('🎯 议题', [
+          createNode('产品进度回顾'),
+          createNode('下季度规划')
+        ]),
+        createNode('👥 参与者', [
+          createNode('主持人: Alex'),
+          createNode('记录人: Sam')
+        ]),
+        createNode('💬 讨论内容', [
+          createNode('新技术栈选型'),
+          createNode('风险评估')
+        ]),
+        createNode('✅ 主要决议', [
+          createNode('确认采用 Vue 3'),
+          createNode('每周技术分享')
+        ]),
+        createNode('📌 待办事项', [
+          createNode('@Alex 整理文档')
+        ])
+      ]),
+      template: 'default',
+      theme: 'fresh-blue',
+      version: '1.4.43'
+    }
   },
 
   brainstorm: {
@@ -159,44 +108,24 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
     description: '主题→自由发散想法',
     icon: '💡',
     content: {
-      nodeData: {
-        id: 'root_brainstorm',
-        topic: '💡 头脑风暴',
-        children: [
-          { 
-            id: 'node_goal', 
-            topic: '🌟 核心目标', 
-            children: [
-              { id: 'node_goal_retention', topic: '提升用户留存', children: [] },
-              { id: 'node_goal_active', topic: '增加日活', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_idea', 
-            topic: '💥 创意发散', 
-            children: [
-              { id: 'node_idea_game', topic: '游戏化任务', children: [] },
-              { id: 'node_idea_daily', topic: '每日签到', children: [] },
-              { id: 'node_idea_community', topic: '社区互动', children: [] }
-            ] 
-          },
-          { 
-            id: 'node_risk', 
-            topic: '🚧 潜在风险', 
-            children: [
-              { id: 'node_risk_cost', topic: '开发成本高', children: [] }
-            ] 
-          }
-        ]
-      },
-      arrows: [
-        { id: 'arrow_goal_idea', label: '解决方案', from: 'node_goal_retention', to: 'node_idea_game', delta1: {x: 0, y: 0}, delta2: {x: 0, y: 0} }
-      ],
-      summaries: [
-        { id: 'sum_idea', parent: 'node_idea', start: 0, end: 1, label: '激励机制' }
-      ],
-      direction: 1
-    } as MindmapContent
+      root: createNode('💡 头脑风暴', [
+        createNode('🌟 核心目标', [
+          createNode('提升用户留存'),
+          createNode('增加日活')
+        ]),
+        createNode('💥 创意发散', [
+          createNode('游戏化任务'),
+          createNode('每日签到'),
+          createNode('社区互动')
+        ]),
+        createNode('🚧 潜在风险', [
+          createNode('开发成本高')
+        ])
+      ]),
+      template: 'default',
+      theme: 'fresh-blue',
+      version: '1.4.43'
+    }
   }
 }
 
