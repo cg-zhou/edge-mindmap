@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
   background: #ffffff;
   border-bottom: 1px solid var(--border-glass);
   gap: 16px;
-  padding: 12px 24px;
+  padding: 10px 24px;
 }
 
 .toggle-btn {
@@ -376,8 +376,8 @@ onBeforeUnmount(() => {
   color: var(--color-text-main);
   font-size: 20px;
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -410,7 +410,7 @@ onBeforeUnmount(() => {
 
 .save-status {
   font-size: 13px;
-  padding: 6px 12px;
+  padding: 4px 12px;
   border-radius: var(--radius-sm);
   white-space: nowrap;
   display: inline-flex;
@@ -452,7 +452,7 @@ onBeforeUnmount(() => {
 }
 
 .save-btn {
-  padding: 8px 20px;
+  padding: 6px 20px;
   background: var(--color-primary);
   color: #ffffff;
   border: none;

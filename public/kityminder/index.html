@@ -69,6 +69,10 @@
 		left: auto !important; */
       }
 
+      .nav-bar .nav-btn.active {
+        background-color: #1f3875;
+      }
+
       /* .nav-previewer {
         right: 45px !important;
 		left: auto !important;
@@ -116,6 +120,27 @@
       .km-btn-item[title*="资源"] {
         display: none !important;
       }
+
+      /* 预览模式下的样式隐藏 */
+      body.preview-mode .top-tab,
+      body.preview-mode .nav-bar,
+      body.preview-mode .nav-previewer,
+      body.preview-mode .nav-previewer-container,
+      body.preview-mode .search-box,
+      body.preview-mode .control-panel {
+        display: none !important;
+      }
+      body.preview-mode .minder-editor-container {
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      body.preview-mode .minder-editor {
+        top: 0 !important;
+      }
     </style>
   </head>
   <body ng-app="kityminderDemo" ng-controller="MainController">
@@ -138,6 +163,11 @@
     <!-- 如果 marked.js 丢失，请从此下载并放入 lib/ : https://cdn.jsdelivr.net/npm/marked/marked.min.js -->
     <script src="lib/marked.js"></script>
     <script>
+      // 检查是否为预览模式
+      if (window.location.search.indexOf('mode=preview') !== -1) {
+        document.body.classList.add('preview-mode');
+      }
+
       // 兼容性修正：较新版本的 marked 是一个对象而非函数，但 KityMinder 期待它是一个函数
       if (typeof marked === "object" && typeof marked.parse === "function") {
         var _marked = marked;
@@ -190,11 +220,68 @@
             });
           };
 
+          // 标记是否已经完成初始定位，并记录初始视口
+          var hasInitedView = false;
+          var homeView = null;
+
           // 监听父窗口传来的操作指令
           window.addEventListener("message", function (event) {
             var res = event.data;
             if (res.type === "importJson") {
+              var isPreview = document.body.classList.contains('preview-mode');
+              var lastView = (isPreview && hasInitedView) ? window.minder.getPaper().getViewPort() : null;
+
               window.minder.importJson(res.data);
+              
+              if (isPreview) {
+                // 判断是否是重新开始（根节点无子节点）
+                var isReset = !res.data.root || !res.data.root.children || res.data.root.children.length === 0;
+
+                if (!hasInitedView || isReset) {
+                  // 初始化或重置：校准位置
+                  if (!homeView) {
+                    window.minder.execCommand('camera', window.minder.getRoot(), 0);
+                    var template = window.minder.getTemplate();
+                    if (template === 'right' || template === 'fish-bone') {
+                      var paper = window.minder.getPaper();
+                      var view = paper.getViewPort();
+                      view.center.x += 200; // 调整偏移量以适配 100% 缩放
+                      paper.setViewPort(view);
+                    }
+                    homeView = window.minder.getPaper().getViewPort();
+                    hasInitedView = true;
+                  } else {
+                    window.minder.getPaper().setViewPort(homeView);
+                  }
+                } else if (lastView) {
+                  window.minder.getPaper().setViewPort(lastView);
+                }
+              }
+            } else if (res.type === "appendNode") {
+              // 增量添加节点逻辑，实现平滑增长
+              var parentText = res.parentText;
+              var nodeData = res.node;
+              var targetParent = null;
+
+              // 递归查找父节点
+              window.minder.getRoot().traverse(function(node) {
+                if (node.data.text === parentText) {
+                  targetParent = node;
+                }
+              });
+
+              if (targetParent) {
+                // 执行添加节点命令
+                window.minder.select(targetParent);
+                // 这里调用编辑器命令添加带文字的节点
+                window.minder.execCommand('AppendChildNode', nodeData.text);
+                
+                // 对新生成的节点设置其他属性
+                if (nodeData.priority) window.minder.execCommand('Priority', nodeData.priority);
+                if (nodeData.progress) window.minder.execCommand('Progress', nodeData.progress);
+                if (nodeData.note) window.minder.execCommand('Note', nodeData.note);
+                if (nodeData.hyperlink) window.minder.execCommand('Hyperlink', nodeData.hyperlink);
+              }
             } else if (res.type === "exportJson") {
               var data = window.minder.exportJson();
               window.parent.postMessage(

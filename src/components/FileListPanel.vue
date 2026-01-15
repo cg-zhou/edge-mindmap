@@ -169,7 +169,7 @@ const logout = async () => {
 
 .btn-new-file {
   width: 100%;
-  padding: 10px 12px;
+  padding: 6px 12px;
   background: var(--color-primary);
   color: #ffffff;
   border: none;

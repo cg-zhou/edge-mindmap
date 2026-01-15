@@ -1,37 +1,68 @@
 <template>
   <div class="home-container">
+    <!-- Decorative background elements -->
+    <div class="bg-decoration">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+    
     <!-- Particle Background -->
     <canvas ref="particleCanvas" class="particle-canvas"></canvas>
 
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="hero-content">
-        <a href="https://www.aliyun.com/product/esa" target="_blank" rel="noopener noreferrer"
-          class="hero-badge glow-badge" data-aos="fade-down" @click="handleBadgeClick">
-          <span class="badge-icon">⚡</span>
-          <span>基于阿里云 ESA 边缘计算</span>
-        </a>
+        <div class="hero-text-area">
+          <a href="https://www.aliyun.com/product/esa" target="_blank" rel="noopener noreferrer"
+            class="hero-badge glow-badge" data-aos="fade-down" @click="handleBadgeClick">
+            <span class="badge-icon">⚡</span>
+            <span>基于阿里云 ESA 边缘计算</span>
+          </a>
 
-        <h1 class="hero-title glow-text" data-aos="fade-up" data-aos-delay="100">
-          思维导图
-          <span class="title-divider">|</span>
-          <span class="gradient-text gradient-animated">MINDMAP</span>
-        </h1>
+          <h1 class="hero-title glow-text" data-aos="fade-up" data-aos-delay="100">
+            思维导图
+            <span class="title-divider">|</span>
+            <span class="gradient-text gradient-animated">MINDMAP</span>
+          </h1>
 
-        <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="200">
-          在线思维导图工具，边缘节点加速，实时保存，随时随地激发创意
-        </p>
+          <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="200">
+            边缘节点加速，实时保存，随时随地激发创意
+          </p>
 
-        <div class="hero-actions" data-aos="fade-up" data-aos-delay="300">
-          <button class="btn-primary" @click="handleButtonClick">
-            <span>游客登录</span>
-            <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M5 12h14m-7-7l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-          <button class="btn-secondary" @click="handleLoginWithMicrosoft">
-            <span>Microsoft 登录</span>
-          </button>
+          <div class="hero-actions" data-aos="fade-up" data-aos-delay="300">
+            <button class="btn-primary" @click="handleButtonClick">
+              <span>游客登录</span>
+              <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M5 12h14m-7-7l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <button class="btn-secondary" @click="handleLoginWithMicrosoft">
+              <span>Microsoft 登录</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mini Mindmap Preview -->
+        <div class="hero-preview-area" data-aos="fade-left" data-aos-delay="400">
+          <div class="preview-window">
+            <div class="window-header">
+              <div class="window-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="window-title">Mindmap Demo</div>
+            </div>
+            <div class="window-content">
+              <iframe
+                ref="previewIframe"
+                src="/kityminder/index.html?mode=preview"
+                class="preview-iframe"
+                @load="onPreviewLoad"
+              ></iframe>
+            </div>
+          </div>
+          <!-- Decorative element behind window -->
+          <div class="preview-glow"></div>
         </div>
       </div>
     </section>
@@ -39,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { message } from '@/utils/message'
@@ -49,11 +80,97 @@ import 'aos/dist/aos.css'
 const router = useRouter()
 const authStore = useAuthStore()
 const particleCanvas = ref<HTMLCanvasElement | null>(null)
+const previewIframe = ref<HTMLIFrameElement | null>(null)
 const loading = ref(false)
+const previewReady = ref(false)
+
+// 模拟脑图数据演化
+const simulationData = {
+  template: 'right',
+  theme: 'classic-compact',
+  root: {
+    data: { text: 'Demo', background: '#2A5FBD', color: '#fff' },
+    children: []
+  }
+}
+
+const extraNodes = [
+  { parentText: 'Demo', text: '🚀 极速' },
+  { parentText: '🚀 极速', text: '阿里云 ESA 加速' },
+  { parentText: '🚀 极速', text: '多级缓存' },
+  { parentText: 'Demo', text: '✨ 多种视图' },
+  { parentText: '✨ 多种视图', text: '思维导图', priority: 1 },
+  { parentText: '✨ 多种视图', text: '组织结构图', priority: 2 },
+  { parentText: '✨ 多种视图', text: '鱼骨图', priority: 3 },
+  { parentText: 'Demo', text: '📅 进度标识' },
+  { parentText: '📅 进度标识', text: '持续推进', progress: 4 },
+  { parentText: '📅 进度标识', text: '任务完成', progress: 9 }
+]
+
+function onPreviewLoad() {
+  // 暂时不需要处理，靠 message 事件判断 ready
+}
+
+function startSimulation() {
+  if (!previewIframe.value?.contentWindow) return
+
+  let step = 0
+
+  const update = () => {
+    if (step < extraNodes.length) {
+      const newNode = extraNodes[step]
+      
+      // 改为发送增量指令，而不是全量数据
+      previewIframe.value?.contentWindow?.postMessage({
+        type: 'appendNode',
+        parentText: newNode.parentText,
+        node: {
+          text: newNode.text,
+          priority: newNode.priority,
+          progress: newNode.progress,
+          note: newNode.note,
+          hyperlink: newNode.hyperlink
+        }
+      }, '*')
+      
+      step++
+      setTimeout(update, 1200) // 缩短间隔至 1.2s
+    } else {
+      setTimeout(() => {
+        // 重启模拟：只有这时才用 importJson 还原初始状态
+        previewIframe.value?.contentWindow?.postMessage({
+          type: 'importJson',
+          data: simulationData
+        }, '*')
+        step = 0
+        setTimeout(update, 1200)
+      }, 5000)
+    }
+  }
+
+  // 初始倒入
+  previewIframe.value.contentWindow.postMessage({
+    type: 'importJson',
+    data: simulationData
+  }, '*')
+  
+  setTimeout(update, 1200)
+}
 
 // OAuth配置
 const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || ''
 const MICROSOFT_REDIRECT_URI = import.meta.env.VITE_MICROSOFT_REDIRECT_URI || 'http://localhost:5173/auth/callback'
+
+// 处理来自 iframe 的消息
+const handleMessage = (event: MessageEvent) => {
+  if (event.data && event.data.type === 'ready') {
+    // 判断是否是预览窗口的 ready
+    if (event.source === previewIframe.value?.contentWindow) {
+      previewReady.value = true
+      startSimulation()
+    }
+  }
+}
 
 /**
  * 生成随机state用于防CSRF
@@ -259,6 +376,7 @@ function animateParticles() {
 
 
 onMounted(() => {
+  window.addEventListener('message', handleMessage)
   AOS.init({
     duration: 800,
     easing: 'ease-out-cubic',
@@ -309,6 +427,10 @@ onMounted(() => {
     })
   }
 
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('message', handleMessage)
 })
 
 // 创建爆裂粒子效果的通用函数
@@ -408,8 +530,53 @@ const handleLoginWithMicrosoft = (e: Event) => {
 .home-container {
   min-height: 100vh;
   overflow-x: hidden;
-  background: #f8fafc;
-  color: #1e293b;
+  background: #0c1621;
+  color: #f8fafc;
+  position: relative;
+}
+
+/* Decorative Background */
+.bg-decoration {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shape {
+  position: absolute;
+  filter: blur(100px);
+  opacity: 0.1;
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.shape-1 {
+  width: 40vw;
+  height: 40vw;
+  background: #3b82f6;
+  top: -10vw;
+  left: -10vw;
+}
+
+.shape-2 {
+  width: 35vw;
+  height: 35vw;
+  background: #8b5cf6;
+  bottom: -5vw;
+  right: -5vw;
+}
+
+.shape-3 {
+  width: 25vw;
+  height: 25vw;
+  background: #10b981;
+  top: 40%;
+  left: 60%;
 }
 
 /* Particle Canvas */
@@ -440,14 +607,97 @@ const handleLoginWithMicrosoft = (e: Event) => {
 .hero-content {
   max-width: 1200px;
   width: 100%;
-  text-align: center;
+  text-align: left;
   position: relative;
   z-index: 3;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 60px;
   user-select: none;
+}
+
+.hero-text-area {
+  flex: 1;
+  max-width: 600px;
+}
+
+.hero-preview-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.preview-window {
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 4 / 3;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+.window-header {
+  height: 36px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+.window-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.window-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.window-dots span:nth-child(1) { background: #ff5f56; }
+.window-dots span:nth-child(2) { background: #ffbd2e; }
+.window-dots span:nth-child(3) { background: #27c93f; }
+
+.window-title {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.window-content {
+  flex: 1;
+  background: white; /* 模拟编辑器背景 */
+  position: relative;
+}
+
+.preview-iframe {
+  width: 100%;
+  height: 100%;
+  transform: scale(1); /* 恢复 100% 缩放 */
+  transform-origin: 0 0;
+  border: none;
+}
+
+.preview-glow {
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(circle, rgba(42, 95, 189, 0.1) 0%, transparent 70%);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .hero-badge {
@@ -455,10 +705,10 @@ const handleLoginWithMicrosoft = (e: Event) => {
   align-items: center;
   gap: 10px;
   padding: 8px 24px;
-  background: rgba(42, 95, 189, 0.05);
-  border: 1px solid rgba(42, 95, 189, 0.1);
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 100px;
-  color: #2A5FBD;
+  color: #60a5fa;
   font-size: 14px;
   margin-bottom: 32px;
   text-decoration: none;
@@ -479,7 +729,7 @@ const handleLoginWithMicrosoft = (e: Event) => {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.2),
     transparent
   );
   transition: none;
@@ -493,10 +743,10 @@ const handleLoginWithMicrosoft = (e: Event) => {
 }
 
 .hero-badge:hover {
-  background: rgba(42, 95, 189, 0.1);
+  background: rgba(59, 130, 246, 0.15);
   transform: translateY(-2px) scale(1.02);
-  border-color: rgba(42, 95, 189, 0.3);
-  box-shadow: 0 4px 20px rgba(42, 95, 189, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2);
 }
 
 .badge-icon {
@@ -506,20 +756,22 @@ const handleLoginWithMicrosoft = (e: Event) => {
 }
 
 @keyframes iconPulse {
-  0%, 100% { transform: scale(1) rotate(0); filter: drop-shadow(0 0 0 rgba(42, 95, 189, 0)); }
-  50% { transform: scale(1.2) rotate(15deg); filter: drop-shadow(0 0 8px rgba(42, 95, 189, 0.5)); }
+  0%, 100% { transform: scale(1) rotate(0); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+  50% { transform: scale(1.2) rotate(15deg); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5)); }
 }
 
 .hero-title {
   font-size: clamp(40px, 8vw, 72px);
   font-weight: 800;
-  color: #0f172a;
+  color: #ffffff;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.1;
+  display: flex;
+  flex-direction: column;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #2A5FBD 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -527,51 +779,50 @@ const handleLoginWithMicrosoft = (e: Event) => {
 }
 
 .title-divider {
-  display: inline-block;
+  display: none;
   margin: 0 16px;
-  color: #cbd5e1;
+  color: #475569;
   font-weight: 300;
   animation: dividerPulse 2s ease-in-out infinite;
 }
 
 .hero-subtitle {
   font-size: clamp(16px, 2vw, 20px);
-  color: #64748b;
-  margin: 0 0 40px;
+  color: #94a3b8;
+  margin: 24px 0 40px;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
   line-height: 1.6;
 }
 
 .hero-actions {
   display: flex;
   gap: 16px;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
 .btn-primary {
-  background: #2A5FBD;
+  background: #3b82f6;
   color: #ffffff;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn-primary:hover {
-  background: #1e4b9d;
+  background: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(42, 95, 189, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .btn-secondary {
-  background: #ffffff;
-  color: #475569;
-  border: 1px solid #d1d5db;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
 }
 
 .btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #9ca3af;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
 }
 
@@ -628,7 +879,7 @@ const handleLoginWithMicrosoft = (e: Event) => {
 
 /* Features Section */
 .features-section {
-  background: white;
+  background: #0f1a2a;
   padding: 100px 20px;
   position: relative;
   z-index: 2;
@@ -642,13 +893,13 @@ const handleLoginWithMicrosoft = (e: Event) => {
 .section-title {
   font-size: clamp(32px, 5vw, 48px);
   font-weight: 800;
-  color: #1a1a1a;
+  color: #ffffff;
   margin: 0 0 16px;
 }
 
 .section-subtitle {
   font-size: 18px;
-  color: #666;
+  color: #94a3b8;
   margin: 0;
 }
 
@@ -662,19 +913,20 @@ const handleLoginWithMicrosoft = (e: Event) => {
 
 .feature-card {
   padding: 40px 30px;
-  background: white;
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .card-flip:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 0 20px rgba(102, 126, 234, 0.2);
-  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .feature-icon {
@@ -686,40 +938,41 @@ const handleLoginWithMicrosoft = (e: Event) => {
   justify-content: center;
   margin-bottom: 20px;
   transition: all 0.3s ease;
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .icon-glow {
-  box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
 }
 
 .feature-card:hover .feature-icon {
   transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 0 30px rgba(102, 126, 234, 0.6);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
 }
 
 .feature-icon svg {
   width: 30px;
   height: 30px;
-  color: white;
+  color: #60a5fa;
 }
 
 .feature-title {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #ffffff;
   margin: 0 0 12px;
 }
 
 .feature-desc {
   font-size: 15px;
-  color: #666;
+  color: #94a3b8;
   line-height: 1.6;
   margin: 0;
 }
 
 /* Tech Section */
 .tech-section {
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #0c1621;
   padding: 80px 20px;
   position: relative;
   z-index: 2;
@@ -734,7 +987,7 @@ const handleLoginWithMicrosoft = (e: Event) => {
 .tech-title {
   font-size: clamp(24px, 4vw, 36px);
   font-weight: 700;
-  color: #1a1a1a;
+  color: #ffffff;
   margin: 0 0 30px;
 }
 
@@ -747,29 +1000,30 @@ const handleLoginWithMicrosoft = (e: Event) => {
 
 .tech-badge {
   padding: 12px 24px;
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 50px;
   font-size: 16px;
   font-weight: 600;
-  color: #667eea;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: #60a5fa;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
-  border: 2px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .badge-glow {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 15px rgba(59, 130, 246, 0.2);
 }
 
 .tech-badge:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 0 25px rgba(102, 126, 234, 0.5);
-  border-color: #667eea;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 25px rgba(59, 130, 246, 0.4);
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* CTA Section */
 .cta-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
   padding: 100px 20px;
   position: relative;
   z-index: 2;
@@ -795,32 +1049,72 @@ const handleLoginWithMicrosoft = (e: Event) => {
 }
 
 .btn-cta {
-  background: white;
-  color: #667eea;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 20px rgba(255, 255, 255, 0.3);
+  background: #ffffff;
+  color: #1e40af;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .btn-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
 }
 
 /* Footer */
 .footer {
-  background: #1a1a1a;
+  background: #080f18;
   padding: 30px 20px;
   text-align: center;
   position: relative;
   z-index: 2;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .footer p {
-  color: rgba(255, 255, 255, 0.6);
+  color: #64748b;
   margin: 0;
   font-size: 14px;
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .hero-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 40px;
+    padding-top: 40px;
+  }
+
+  .hero-title {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .title-divider {
+    display: inline-block;
+  }
+
+  .hero-text-area {
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-subtitle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-actions {
+    justify-content: center;
+  }
+
+  .hero-preview-area {
+    width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
   .hero-section {
     padding: 60px 20px;

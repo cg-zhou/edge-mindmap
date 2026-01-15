@@ -130,7 +130,7 @@ export const TEMPLATES: Record<string, MindmapTemplate> = {
         ]
       },
       template: 'fish-bone',
-      theme: 'fresh-blue-compat',
+      theme: 'classic-compact',
       version: '1.4.43'
     }
   }
