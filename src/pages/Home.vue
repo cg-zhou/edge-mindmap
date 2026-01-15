@@ -118,7 +118,7 @@ function startSimulation() {
 
   const update = () => {
     if (step < extraNodes.length) {
-      const newNode = extraNodes[step]
+      const newNode = extraNodes[step]!
       
       // 改为发送增量指令，而不是全量数据
       previewIframe.value?.contentWindow?.postMessage({
@@ -128,8 +128,8 @@ function startSimulation() {
           text: newNode.text,
           priority: newNode.priority,
           progress: newNode.progress,
-          note: newNode.note,
-          hyperlink: newNode.hyperlink
+          note: (newNode as any).note,
+          hyperlink: (newNode as any).hyperlink
         }
       }, '*')
       
