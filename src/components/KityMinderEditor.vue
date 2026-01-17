@@ -36,6 +36,8 @@ let isInternalUpdate = false
 
 // 处理来自 iframe 的消息
 const handleMessage = (event: MessageEvent) => {
+  if (event.source !== iframeRef.value?.contentWindow) return
+
   if (event.data && event.data.type === 'ready') {
     isReady.value = true
     sendDataToEditor()

@@ -239,7 +239,7 @@ class FileService {
     return `${timestamp}${random}`
   }
 
-  async createFile(title: string, templateId?: string): Promise<File> {
+  async createFile(title: string, templateId?: string, customContent?: MindmapContent): Promise<File> {
     // 获取当前用户ID
     const user = await authService.getCurrentUser()
     if (!user?.id) {
@@ -251,13 +251,13 @@ class FileService {
     const isoNow = new Date(now).toISOString()
     
     // 获取模板内容
-    let templateContent = { root: { data: { text: '根节点' }, children: [] } } as any
-    if (templateId) {
+    let content = customContent || { root: { data: { text: '根节点' }, children: [] } } as any
+    if (!customContent && templateId) {
       try {
         const { TEMPLATES } = await import('@/constants/templates')
         const template = TEMPLATES[templateId]
         if (template) {
-          templateContent = template.content
+          content = template.content
         }
       } catch (err) {
         console.warn('Failed to load template:', err)
@@ -268,7 +268,7 @@ class FileService {
       id: fileId,
       userId: user.id,
       title,
-      content: templateContent as MindmapContent,
+      content: content as MindmapContent,
       createdAt: isoNow,
       updatedAt: isoNow,
       _deleted: false

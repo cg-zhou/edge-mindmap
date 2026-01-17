@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <aside class="sidebar" :class="{ collapsed: !showSidebar }">
       <FileListPanel :selectedFileId="selectedFileId" :loading="loading" @select-file="handleSelectFile"
-        @create-file="handleCreateFile" @delete-file="handleDeleteFile" @logout="handleLogout" />
+        @create-file="handleCreateFile" @ai-create="handleAICreate" @delete-file="handleDeleteFile" @logout="handleLogout" />
     </aside>
 
     <!-- 主内容区 -->
@@ -45,6 +45,9 @@
 
     <!-- 移动端遮罩 -->
     <div v-if="showSidebar && isMobile" class="overlay" @click="showSidebar = false" />
+
+    <!-- AI 创作对话框 -->
+    <AIDialog ref="aiDialogRef" @success="handleAISuccess" />
   </div>
 </template>
 
@@ -56,11 +59,15 @@ import { useFileStore } from '@/stores/files'
 import { dialog, file } from '@/utils/message'
 import KityMinderEditor from '@/components/KityMinderEditor.vue'
 import FileListPanel from '@/components/FileListPanel.vue'
+import AIDialog from '@/components/AIDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const fileStore = useFileStore()
+
+// 引用
+const aiDialogRef = ref<any>(null)
 
 // 状态
 const selectedFileId = ref<string | null>(null)
@@ -146,6 +153,25 @@ const handleCreateFile = async () => {
   // 创建文件（使用选中的模板）
   const newFile = await fileStore.createFile(result.fileName, result.templateId)
   await handleSelectFile(newFile.id)
+}
+
+// AI 创作相关
+const handleAICreate = () => {
+  if (aiDialogRef.value) {
+    aiDialogRef.value.show()
+  }
+}
+
+const handleAISuccess = async (mindmapData: any) => {
+  try {
+    // 自动取根节点的文字作为文件名
+    const rootText = mindmapData.root?.data?.text || 'AI 生成的脑图'
+    // 创建文件（不使用模板，直接传 customContent）
+    const newFile = await fileStore.createFile(rootText, undefined, mindmapData)
+    await handleSelectFile(newFile.id)
+  } catch (error: any) {
+    console.error('Failed to create AI file:', error)
+  }
 }
 
 // 删除文件

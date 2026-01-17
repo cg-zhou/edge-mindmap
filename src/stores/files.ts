@@ -72,11 +72,11 @@ export const useFileStore = defineStore('files', () => {
   /**
    * 创建新文件
    */
-  const createFile = async (title: string = '无标题思维导图', templateId?: string) => {
+  const createFile = async (title: string = '无标题思维导图', templateId?: string, customContent?: MindmapContent) => {
     try {
       loading.value = true
       error.value = null
-      const newFile = await fileService.createFile(title, templateId)
+      const newFile = await fileService.createFile(title, templateId, customContent)
       currentFile.value = newFile
       
       // 刷新列表

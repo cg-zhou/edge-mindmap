@@ -3,6 +3,7 @@
     <!-- 头部 - 新建按钮 -->
     <div class="panel-header">
       <button class="btn-new-file" @click="createNewFile">+ 新建</button>
+      <button class="btn-ai-file" @click="$emit('ai-create')">✨ AI 创作</button>
     </div>
 
     <!-- 文件列表 -->
@@ -74,6 +75,7 @@ interface Props {
 interface Emits {
   (e: 'select-file', fileId: string): void
   (e: 'create-file'): void
+  (e: 'ai-create'): void
   (e: 'delete-file', fileId: string): void
   (e: 'logout'): void
 }
@@ -165,10 +167,12 @@ const logout = async () => {
   padding: 10px;
   border-bottom: 1px solid var(--border-glass);
   flex-shrink: 0;
+  display: flex;
+  gap: 8px;
 }
 
 .btn-new-file {
-  width: 100%;
+  flex: 1;
   padding: 6px 12px;
   background: var(--color-primary);
   color: #ffffff;
@@ -182,12 +186,35 @@ const logout = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 .btn-new-file:hover {
   background: #0284c7;
   transform: translateY(-1px);
+}
+
+.btn-ai-file {
+  flex: 1;
+  padding: 6px 12px;
+  background-color: #f0f7ff;
+  color: var(--color-primary);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn-ai-file:hover {
+  background-color: #e1f0ff;
+  border-style: solid;
 }
 
 .btn-new-file:active {

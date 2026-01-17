@@ -134,7 +134,7 @@ function startSimulation() {
       }, '*')
       
       step++
-      setTimeout(update, 1200) // 缩短间隔至 1.2s
+      setTimeout(update, 1000) // 缩短间隔至 1s
     } else {
       setTimeout(() => {
         // 重启模拟：只有这时才用 importJson 还原初始状态
