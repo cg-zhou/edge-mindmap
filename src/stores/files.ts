@@ -98,6 +98,13 @@ export const useFileStore = defineStore('files', () => {
     try {
       loading.value = true
       error.value = null
+      
+      // 重置保存状态，避免显示上一个文件的同步信息
+      saveState.value = {
+        status: 'idle',
+        message: ''
+      }
+      
       currentFile.value = await fileService.getFile(fileId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load file'
@@ -215,6 +222,28 @@ export const useFileStore = defineStore('files', () => {
     currentFile.value = null
   }
 
+  /**
+   * 设置分享状态
+   */
+  const setSharedStatus = async (fileId: string, isShared: boolean) => {
+    // 1. 更新内部状态
+    const targetFile = files.value.find(f => f.id === fileId)
+    if (targetFile) {
+      targetFile.isShared = isShared
+    }
+    
+    if (currentFile.value && currentFile.value.id === fileId) {
+      currentFile.value.isShared = isShared
+    }
+
+    // 2. 持久化到存储
+    try {
+      await fileService.updateFile(fileId, { isShared })
+    } catch (err) {
+      console.warn('Failed to persist shared status', err)
+    }
+  }
+
   return {
     files,
     currentFile,
@@ -229,6 +258,7 @@ export const useFileStore = defineStore('files', () => {
     saveFile,
     renameFile,
     deleteFile,
-    clearCurrentFile
+    clearCurrentFile,
+    setSharedStatus
   }
 })

@@ -27,6 +27,7 @@ export interface File {
   content: MindmapContent
   createdAt: string
   updatedAt: string
+  isShared?: boolean
 }
 
 export interface FileListItem {
@@ -34,6 +35,7 @@ export interface FileListItem {
   title: string
   createdAt: string
   updatedAt: string
+  isShared?: boolean
 }
 
 /**

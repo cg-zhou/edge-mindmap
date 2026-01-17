@@ -17,6 +17,11 @@ export default defineConfig({
         secure: false,
         timeout: 60000,
         proxyTimeout: 60000,
+      },
+      '/share': {
+        target: 'https://mindmap.cg-zhou.top',
+        changeOrigin: true,
+        secure: false,
       }
     }
   }

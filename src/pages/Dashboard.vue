@@ -15,10 +15,16 @@
         </button>
         <h1 class="title">{{ selectedFile.title }}</h1>
         <div class="actions">
-          <span class="save-status" :class="`status-${fileStore.saveState.status}`">
+          <span v-if="fileStore.saveState.message || lastSaveTime" class="save-status" :class="`status-${fileStore.saveState.status}`">
             <span class="status-text">{{ fileStore.saveState.message }}</span>
             <span v-if="lastSaveTime" class="status-time">{{ lastSaveTime }}</span>
           </span>
+
+          <!-- 分享按钮 -->
+          <button class="share-btn-top" @click="handleShare" :disabled="!selectedFile">
+            <span class="share-icon">🔗</span>
+            分享
+          </button>
 
           <!-- 导出菜单 -->
           <div class="export-container">
@@ -27,7 +33,7 @@
             </button>
             <transition name="fade">
               <div v-if="showExportDropdown" class="export-menu" @click.stop>
-                <div class="menu-header">导出脑图</div>
+                <div class="menu-header">导出思维导图</div>
                 <button @click="handleExport('png')">PNG 图片 (.png)</button>
                 <button @click="handleExport('svg')">SVG 矢量图 (.svg)</button>
                 <button @click="handleExport('markdown')">Markdown 格式 (.md)</button>
@@ -65,6 +71,9 @@
 
     <!-- AI 创作对话框 -->
     <AIDialog ref="aiDialogRef" @success="handleAISuccess" />
+
+    <!-- 分享对话框 -->
+    <ShareDialog ref="shareDialogRef" @confirm="performShare" @cancel="handleCancelShare" />
   </div>
 </template>
 
@@ -73,10 +82,12 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useFileStore } from '@/stores/files'
-import { dialog, file } from '@/utils/message'
+import { dialog, message, file } from '@/utils/message'
 import KityMinderEditor from '@/components/KityMinderEditor.vue'
 import FileListPanel from '@/components/FileListPanel.vue'
 import AIDialog from '@/components/AIDialog.vue'
+import ShareDialog from '@/components/ShareDialog.vue'
+import fileService from '@/utils/files'
 
 const router = useRouter()
 const route = useRoute()
@@ -86,6 +97,7 @@ const fileStore = useFileStore()
 // 引用
 const aiDialogRef = ref<any>(null)
 const editorRef = ref<any>(null)
+const shareDialogRef = ref<any>(null)
 
 // 状态
 const selectedFileId = ref<string | null>(null)
@@ -95,6 +107,7 @@ const showExportDropdown = ref(false)
 const hasChanges = ref(false)
 const lastSaveTime = ref<string>('')
 const isLoadingFile = ref(false)  // 标记是否正在加载文件
+const isSyncingShare = ref(false) // 标记是否正在同步分享内容
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let timeUpdateTimer: ReturnType<typeof setInterval> | null = null
 
@@ -106,6 +119,106 @@ const selectedFile = computed(() =>
 )
 const isMobile = computed(() => window.innerWidth < 768)
 
+// 分享逻辑
+const sharedFiles = ref<Set<string>>(new Set()) // 记录本会话中分享过的文件
+
+const handleShare = async () => {
+  if (!selectedFile.value) return
+
+  // 1. 获取分享状态
+  const shareId = selectedFile.value.id
+  const targetUrl = `${window.location.origin}/share/${shareId}`
+  
+  // 2. 如果已经分享过，直接带链接打开；否则打开引导页（不传参数）
+  if (selectedFile.value.isShared) {
+    shareDialogRef.value.show(targetUrl)
+  } else {
+    shareDialogRef.value.show()
+  }
+}
+
+// 真正执行分享的操作（由对话框确认触发）
+const performShare = async () => {
+  if (!selectedFile.value || !editorRef.value) return
+
+  // 1. 设置加载状态
+  shareDialogRef.value.setLoading(true)
+  sharedFiles.value.add(selectedFile.value.id)
+
+  try {
+    // 2. 获取脑图截图 (SVG)
+    const svgData = await editorRef.value.getExportData('svg')
+    
+    // 3. 调用后端分享接口 
+    const shareId = selectedFile.value.id
+    const shareUrl = await fileService.shareFile(
+      shareId,
+      currentData.value, // JSON 数据用于 SEO
+      svgData,           // SVG 数据用于展示
+      selectedFile.value.title
+    )
+
+    // 4. 更新对话框状态并同步本地状态
+    shareDialogRef.value.setUrl(shareUrl)
+    fileStore.setSharedStatus(selectedFile.value.id, true)
+  } catch (error: any) {
+    console.error('Share failed:', error)
+    shareDialogRef.value.setLoading(false)
+  }
+}
+
+// 取消分享
+const handleCancelShare = async () => {
+  if (!selectedFile.value) return
+  
+  const confirmed = await dialog.confirm({
+    title: '停止分享',
+    message: '确定要停止分享该思维导图吗？停止后已发出的链接将失效。',
+    confirmText: '确定停止',
+    isDanger: true
+  })
+
+  if (!confirmed) return
+
+  try {
+    shareDialogRef.value.setCancelling(true)
+    const success = await fileService.cancelShare(selectedFile.value.id)
+    if (success) {
+      sharedFiles.value.delete(selectedFile.value.id)
+      fileStore.setSharedStatus(selectedFile.value.id, false)
+      shareDialogRef.value.setUrl('')
+      message.success('已停止分享')
+    } else {
+      message.error('取消分享失败')
+      shareDialogRef.value.setCancelling(false)
+    }
+  } catch (err) {
+    message.error('操作失败')
+    shareDialogRef.value.setCancelling(false)
+  }
+}
+
+// 静默同步分享内容
+const syncShareContent = async () => {
+  if (!selectedFile.value || !editorRef.value || !selectedFile.value.isShared) return
+
+  isSyncingShare.value = true
+  try {
+    const svgData = await editorRef.value.getExportData('svg')
+    await fileService.shareFile(
+      selectedFile.value.id,
+      currentData.value,
+      svgData,
+      selectedFile.value.title
+    )
+    console.log('[Dashboard] Share snapshot synced automatically')
+  } catch (error) {
+    console.warn('[Dashboard] Silent share sync failed:', error)
+  } finally {
+    isSyncingShare.value = false
+  }
+}
+
 // 选择文件
 const handleSelectFile = async (fileId: string) => {
   console.log(`[Dashboard] handleSelectFile called: ${fileId}, currentSelected: ${selectedFileId.value}`)
@@ -116,6 +229,7 @@ const handleSelectFile = async (fileId: string) => {
 
   selectedFileId.value = fileId
   hasChanges.value = false
+  lastSaveTime.value = '' // 切换文件时重置保存时间
 
   // 更新 URL 路由
   if (route.params.fileId !== fileId) {
@@ -184,7 +298,7 @@ const handleAICreate = () => {
 const handleAISuccess = async (mindmapData: any) => {
   try {
     // 自动取根节点的文字作为文件名
-    const rootText = mindmapData.root?.data?.text || 'AI 生成的脑图'
+    const rootText = mindmapData.root?.data?.text || 'AI 生成的思维导图'
     // 创建文件（不使用模板，直接传 customContent）
     const newFile = await fileStore.createFile(rootText, undefined, mindmapData)
     await handleSelectFile(newFile.id)
@@ -250,6 +364,9 @@ const handleSave = async () => {
     // 更新时间显示
     lastSaveTime.value = formatSaveTime()
     startTimeUpdate()
+
+    // 如果该文件处于分享状态，自动同步到快照
+    syncShareContent()
   } catch (err) {
     console.error('保存失败:', err)
   }
@@ -281,6 +398,9 @@ const triggerAutoSave = async () => {
         lastSaveTime.value = formatSaveTime()
         startTimeUpdate()
         console.log(`[Dashboard] Auto-save completed for file: ${selectedFile.value.id}`)
+
+        // 如果该文件处于分享状态，自动同步到快照
+        syncShareContent()
       } catch (err) {
         console.error('自动保存失败:', err)
       }
@@ -578,6 +698,36 @@ onBeforeUnmount(() => {
 /* 导出菜单 */
 .export-container {
   position: relative;
+}
+
+.share-btn-top {
+  padding: 6px 12px;
+  background-color: #f0f7ff;
+  color: var(--color-primary);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.share-btn-top:hover:not(:disabled) {
+  background-color: #e1f0ff;
+  border-style: solid;
+}
+
+.share-icon {
+  font-size: 12px;
+}
+
+.share-btn-top:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .export-btn {

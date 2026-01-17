@@ -121,16 +121,32 @@
         display: none !important;
       }
 
-      /* 预览模式下的样式隐藏 */
-      body.preview-mode .top-tab,
-      body.preview-mode .nav-bar,
-      body.preview-mode .nav-previewer,
-      body.preview-mode .nav-previewer-container,
-      body.preview-mode .search-box,
-      body.preview-mode .control-panel {
+      /* 核心 UI 显示/遮罩逻辑 */
+      /* 1. 默认状态：显示左下角小地图和导航柱 */
+      .nav-bar,
+      .nav-previewer,
+      .nav-previewer-container {
+        display: block;
+      }
+
+      /* 2. 纯预览模式（Home 主页）：带有 preview 但没有 readonly 时，隐藏地图 */
+      body.preview-mode:not(.readonly-mode) .nav-bar,
+      body.preview-mode:not(.readonly-mode) .nav-previewer,
+      body.preview-mode:not(.readonly-mode) .nav-previewer-container {
         display: none !important;
       }
-      body.preview-mode .minder-editor-container {
+
+      /* 3. 共有逻辑：所有非编辑模式（Preview 或 Readonly）都隐藏顶栏工具栏 */
+      body.preview-mode .top-tab,
+      body.preview-mode .search-box,
+      body.preview-mode .control-panel,
+      body.readonly-mode .top-tab,
+      body.readonly-mode .search-box,
+      body.readonly-mode .control-panel {
+        display: none !important;
+      }
+      body.preview-mode .minder-editor-container,
+      body.readonly-mode .minder-editor-container {
         top: 0 !important;
         bottom: 0 !important;
         left: 0 !important;
@@ -138,7 +154,8 @@
         box-shadow: none !important;
         border: none !important;
       }
-      body.preview-mode .minder-editor {
+      body.preview-mode .minder-editor,
+      body.readonly-mode .minder-editor {
         top: 0 !important;
       }
     </style>
@@ -163,9 +180,12 @@
     <!-- 如果 marked.js 丢失，请从此下载并放入 lib/ : https://cdn.jsdelivr.net/npm/marked/marked.min.js -->
     <script src="lib/marked.js"></script>
     <script>
-      // 检查是否为预览模式
+      // 检查是否为预览模式或只读模式
       if (window.location.search.indexOf('mode=preview') !== -1) {
         document.body.classList.add('preview-mode');
+      }
+      if (window.location.search.indexOf('mode=readonly') !== -1) {
+        document.body.classList.add('readonly-mode');
       }
 
       // 兼容性修正：较新版本的 marked 是一个对象而非函数，但 KityMinder 期待它是一个函数
@@ -205,6 +225,14 @@
             // 告知父窗口：编辑器已就绪
             if (window.parent !== window) {
               window.parent.postMessage({ type: "ready" }, "*");
+            }
+
+            // 只读模式逻辑：禁用编辑器交互
+            if (document.body.classList.contains('readonly-mode')) {
+              // 这里如果 kityminder-editor 支持，可以调用 setReadOnly
+              if (typeof minder.setReadOnly === 'function') {
+                minder.setReadOnly(true);
+              }
             }
 
             // 监听内容变化，实时向父窗口同步数据
@@ -291,13 +319,28 @@
             } else if (res.type === "exportData") {
               // 处理多种格式导出 (png, jpg, svg, markdown, json/km)
               var format = res.format || 'json';
-              window.minder.exportData(format).then(function(content) {
-                window.parent.postMessage({
-                  type: 'exportDataResult',
-                  format: format,
-                  content: content
-                }, '*');
-              });
+              // 补充：静默导出时不要触发下载
+              if (res.silent) {
+                  window.minder.exportData(format).then(function(content) {
+                    window.parent.postMessage({
+                      type: 'exportDataResult',
+                      format: format,
+                      content: content,
+                      silent: true // 关键：回传 silent 标记
+                    }, '*');
+                  });
+              } else {
+                  // 原有逻辑，标准的 kityminder editor 导出通常会自带下载触发
+                  // 但为了保险，我们在这里统一使用 silent 控制逻辑
+                  window.editor.minder.exportData(format).then(function(content) {
+                    window.parent.postMessage({
+                      type: 'exportDataResult',
+                      format: format,
+                      content: content,
+                      silent: false
+                    }, '*');
+                  });
+              }
             }
           });
         });

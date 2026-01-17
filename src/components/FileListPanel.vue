@@ -29,7 +29,10 @@
           @contextmenu.prevent="showFileMenu($event, file.id, file.title)"
         >
           <div class="file-info">
-            <div class="file-name">{{ file.title }}</div>
+            <div class="file-name">
+              {{ file.title }}
+              <span v-if="file.isShared" class="share-badge" title="已分享">🔗</span>
+            </div>
             <div class="file-time" :title="new Date(file.updatedAt).toLocaleString('zh-CN')">
               {{ formatDate(file.updatedAt) }}
             </div>
@@ -278,6 +281,19 @@ const logout = async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.share-badge {
+  font-size: 10px;
+  background: #f0f7ff;
+  color: #2a5fbd;
+  padding: 1px 4px;
+  border-radius: 4px;
+  border: 1px solid #dbeafe;
+  flex-shrink: 0;
 }
 
 .file-item.active .file-name {

@@ -80,7 +80,7 @@
                             </div>
                             <div class="preview-container">
                                 <!-- 独立 Iframe 隔离 -->
-                                <iframe ref="previewIframe" src="/kityminder/index.html?mode=preview"
+                                <iframe ref="previewIframe" src="/kityminder/index.html?mode=preview&mode=readonly"
                                     class="preview-iframe"></iframe>
                             </div>
                         </div>
@@ -92,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import aiService from '@/utils/ai'
 import AIProgressLine from './AIProgressLine.vue'
 
@@ -159,7 +159,7 @@ Vibe Coding是一种新的编程方式，用户可以用自然语言表达意图
     }
 ])
 
-// 引导页脑图数据
+// 引导页思维导图数据
 const INTRO_DATA = {
     root: {
         data: { text: '✨ AI 创作' },
@@ -167,7 +167,7 @@ const INTRO_DATA = {
             {
                 data: { text: '💡 深度提炼' },
                 children: [
-                    { data: { text: '长文转脑图，秒出核心观点' } },
+                    { data: { text: '长文转思维导图，秒出核心观点' } },
                     { data: { text: '自动理清逻辑层级' } }
                 ]
             },
@@ -280,12 +280,16 @@ const show = async () => {
 
     // 随机化示例内容
     const hero = PROTAGONISTS[Math.floor(Math.random() * PROTAGONISTS.length)]
-    inspirationExamples.value[1].title = `🔍 示例 2：${hero}`
-    inspirationExamples.value[1].content = hero
+    if (hero && inspirationExamples.value[1]) {
+        inspirationExamples.value[1].title = `🔍 示例 2：${hero}`
+        inspirationExamples.value[1].content = hero
+    }
 
     const dest = DESTINATIONS[Math.floor(Math.random() * DESTINATIONS.length)]
-    inspirationExamples.value[3].title = `🏔️ 示例 4：${dest.name}旅游规划`
-    inspirationExamples.value[3].content = `我想去${dest.name}旅游，请帮我规划一个 5 天左右的自驾游行程。需要包含：必去景点（如${dest.spots}）、住宿建议、${dest.tip}、以及每个站点的特色体验。`
+    if (dest && inspirationExamples.value[3]) {
+        inspirationExamples.value[3].title = `🏔️ 示例 4：${dest.name}旅游规划`
+        inspirationExamples.value[3].content = `我想去${dest.name}旅游，请帮我规划一个 5 天左右的自驾游行程。需要包含：必去景点（如${dest.spots}）、住宿建议、${dest.tip}、以及每个站点的特色体验。`
+    }
 
     // 等待并加载引导说明脑图
     let attempts = 0

@@ -2,19 +2,19 @@
   <div class="km-editor-container">
     <iframe
       ref="iframeRef"
-      src="/kityminder/index.html"
+      :src="iframeSrc"
       class="km-iframe"
       @load="onIframeLoad"
     ></iframe>
     <div v-if="!isReady" class="loading-overlay">
       <div class="spinner"></div>
-      <p>正在初始化脑图编辑器...</p>
+      <p>正在初始化思维导图编辑器...</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import type { MindmapContent } from '@/types/files'
 
 interface Props {
@@ -24,6 +24,14 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   readonly: false
+})
+
+const iframeSrc = computed(() => {
+  let url = '/kityminder/index.html'
+  if (props.readonly) {
+    url += '?mode=preview&mode=readonly'
+  }
+  return url
 })
 
 const emit = defineEmits<{
@@ -51,8 +59,10 @@ const handleMessage = (event: MessageEvent) => {
     }, 100)
   } else if (event.data && event.data.type === 'exportDataResult') {
     // 触发下载逻辑
-    const { format, content } = event.data;
-    handleDownload(format, content);
+    const { format, content, silent } = event.data;
+    if (!silent) {
+        handleDownload(format, content);
+    }
   }
 }
 
@@ -64,6 +74,39 @@ const exportData = (format: 'png' | 'jpg' | 'svg' | 'markdown' | 'json') => {
       format: format
     }, '*');
   }
+}
+
+// 导出并获取原始数据 (用于分享或同步)
+const getExportData = (format: 'png' | 'svg' | 'markdown' | 'json'): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    if (!isReady.value || !iframeRef.value?.contentWindow) {
+      reject(new Error('编辑器未就绪'))
+      return
+    }
+
+    const handler = (event: MessageEvent) => {
+      // 必须验证来源和类型
+      if (event.source !== (iframeRef.value ? iframeRef.value.contentWindow : null)) return
+      if (event.data && event.data.type === 'exportDataResult' && event.data.format === format) {
+        window.removeEventListener('message', handler)
+        resolve(event.data.content)
+      }
+    }
+
+    window.addEventListener('message', handler)
+
+    // 设置超时，防止死等
+    setTimeout(() => {
+      window.removeEventListener('message', handler)
+      reject(new Error('导出接口响应超时'))
+    }, 5000)
+
+    iframeRef.value.contentWindow.postMessage({
+      type: 'exportData',
+      format: format,
+      silent: true // 告诉 iframe 和 父组件：不需要触发浏览器下载
+    }, '*')
+  })
 }
 
 // 通用下载处理
@@ -132,7 +175,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('message', handleMessage)
 })
 
-defineExpose({ exportData })
+defineExpose({ exportData, getExportData })
 </script>
 
 <style scoped>

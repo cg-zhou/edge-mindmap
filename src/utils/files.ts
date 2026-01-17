@@ -379,7 +379,7 @@ class FileService {
   /**
    * 更新文件 - 保存到本地和云端，启动异步重试机制
    */
-  async updateFile(fileId: string, updates: { title?: string; content?: MindmapContent }): Promise<SaveResult> {
+  async updateFile(fileId: string, updates: { title?: string; content?: MindmapContent; isShared?: boolean }): Promise<SaveResult> {
     // 获取当前用户ID
     const user = await authService.getCurrentUser()
     if (!user?.id) {
@@ -407,7 +407,8 @@ class FileService {
         id: fileId,
         title: updatedFile.title,
         createdAt: localList.files[fileIndex]!.createdAt,
-        updatedAt: isoNow
+        updatedAt: isoNow,
+        isShared: updatedFile.isShared
       }
     }
 
@@ -577,6 +578,34 @@ class FileService {
    */
   async renameFile(fileId: string, title: string): Promise<SaveResult> {
     return this.updateFile(fileId, { title })
+  }
+
+  /**
+   * 分享文件
+   */
+  async shareFile(fileId: string, json: any, svg: string, title: string): Promise<string> {
+    try {
+      const response = await this.api.post('/api/share', { id: fileId, json, svg, title })
+      if (response.data && response.data.shareUrl) {
+        // 返回完整的分享 URL
+        const base = window.location.origin
+        return `${base}${response.data.shareUrl}`
+      }
+      throw new Error('分享失败')
+    } catch (error: any) {
+      console.error('Share error:', error)
+      throw new Error(error.response?.data?.message || '分享同步异常')
+    }
+  }
+
+  async cancelShare(fileId: string): Promise<boolean> {
+    try {
+      await this.api.delete(`/api/share?id=${fileId}`)
+      return true
+    } catch (error) {
+      console.error('Cancel share error:', error)
+      return false
+    }
   }
 }
 
