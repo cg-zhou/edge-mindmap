@@ -49,7 +49,60 @@ const handleMessage = (event: MessageEvent) => {
     setTimeout(() => {
       isInternalUpdate = false
     }, 100)
+  } else if (event.data && event.data.type === 'exportDataResult') {
+    // 触发下载逻辑
+    const { format, content } = event.data;
+    handleDownload(format, content);
   }
+}
+
+// 导出方法：供外部组件调用
+const exportData = (format: 'png' | 'jpg' | 'svg' | 'markdown' | 'json') => {
+  if (isReady.value && iframeRef.value?.contentWindow) {
+    iframeRef.value.contentWindow.postMessage({
+      type: 'exportData',
+      format: format
+    }, '*');
+  }
+}
+
+// 通用下载处理
+const handleDownload = (format: string, content: any) => {
+  let blob: Blob;
+  let filename = `mindmap_${new Date().getTime()}`;
+
+  if (format === 'png' || format === 'jpg') {
+    // content 是 DataURL (base64)
+    const byteString = atob(content.split(',')[1]);
+    const mimeString = content.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    blob = new Blob([ab], { type: mimeString });
+    filename += `.${format}`;
+  } else if (format === 'svg') {
+    blob = new Blob([content], { type: 'image/svg+xml;charset=utf-8' });
+    filename += '.svg';
+  } else if (format === 'markdown') {
+    blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    filename += '.md';
+  } else {
+    // JSON / KM
+    const jsonStr = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+    blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    filename += '.km';
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 const onIframeLoad = () => {
@@ -78,6 +131,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('message', handleMessage)
 })
+
+defineExpose({ exportData })
 </script>
 
 <style scoped>

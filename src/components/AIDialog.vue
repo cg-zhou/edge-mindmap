@@ -9,21 +9,6 @@
                         <h2 class="ai-title">AI 创作</h2>
                     </div>
 
-                    <div class="header-center">
-                        <!-- 运行状态与进度详情 -->
-                        <transition name="fade">
-                            <div v-if="hasStartedGenerating" class="ai-progress-info">
-                                <span :class="['status-tag', isGenerating ? 'status-running' : 'status-done']">
-                                    {{ isGenerating ? '正在构建' : '生成完毕' }}
-                                </span>
-                                <span class="node-count">
-                                    已处理 <strong>{{ generatedCount }}</strong> 个思维节点
-                                </span>
-                                <span v-if="isGenerating" class="pulse-dot"></span>
-                            </div>
-                        </transition>
-                    </div>
-
                     <div class="header-right">
                         <button class="close-btn" @click="handleClose" :disabled="isGenerating">✕</button>
                     </div>
@@ -40,7 +25,7 @@
 
                             <!-- 灵感标签 -->
                             <div class="inspiration-tags">
-                                <button v-for="tag in INSPIRATION_EXAMPLES" :key="tag.title" class="tag-item"
+                                <button v-for="tag in inspirationExamples" :key="tag.title" class="tag-item"
                                     @click="useInspiration(tag)">
                                     <span class="tag-text">{{ tag.title }}</span>
                                 </button>
@@ -57,7 +42,7 @@
                                 <button class="btn btn-primary full-width" :disabled="!prompt.trim() || isGenerating"
                                     @click="handleGenerate">
                                     <span v-if="isGenerating" class="loading-spinner"></span>
-                                    {{ isGenerating ? '正在思考中...' : (hasFinished ? '重新生成' : '开始创作') }}
+                                    {{ isGenerating ? '正在生成...' : (hasFinished ? '重新生成' : '开始创作') }}
                                 </button>
 
                                 <button v-if="hasFinished" class="btn btn-secondary full-width" @click="handleApply">
@@ -72,6 +57,27 @@
 
                         <!-- 右侧：实时预览 -->
                         <div class="layout-right">
+                            <!-- AI 预览工具栏 -->
+                            <div class="preview-toolbar">
+                                <div class="toolbar-left">
+                                    <AIProgressLine :currentStep="currentStep" :generatedCount="generatedCount" />
+                                </div>
+                                <div class="toolbar-right">
+                                    <div class="ai-export-container">
+                                        <button class="ai-export-btn" @click="showExportDropdown = !showExportDropdown">
+                                            导出
+                                        </button>
+                                        <transition name="fade">
+                                            <div v-if="showExportDropdown" class="ai-export-menu" @click.stop>
+                                                <button @click="handleExport('png')">PNG 图片 (.png)</button>
+                                                <button @click="handleExport('svg')">SVG 矢量图 (.svg)</button>
+                                                <button @click="handleExport('markdown')">Markdown 格式 (.md)</button>
+                                                <button @click="handleExport('json')">KityMinder 格式 (.km)</button>
+                                            </div>
+                                        </transition>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="preview-container">
                                 <!-- 独立 Iframe 隔离 -->
                                 <iframe ref="previewIframe" src="/kityminder/index.html?mode=preview"
@@ -86,8 +92,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import aiService from '@/utils/ai'
+import AIProgressLine from './AIProgressLine.vue'
 
 const emit = defineEmits<{
     'success': [data: any]
@@ -103,15 +110,29 @@ const currentStep = ref(0)
 const generatedCount = ref(0)
 const previewIframe = ref<HTMLIFrameElement | null>(null)
 const previewReady = ref(false)
+const showExportDropdown = ref(false)
 const finalResult = ref<any>(null)
 
-const useInspiration = (tag: typeof INSPIRATION_EXAMPLES[0]) => {
+const useInspiration = (tag: any) => {
     if (isGenerating.value) return
     prompt.value = tag.content
 }
 
 // 灵感示例数据
-const INSPIRATION_EXAMPLES = [
+const PROTAGONISTS = ['张无忌', '杨过', '令狐冲', '郭靖', '乔峰', '段誉']
+const DESTINATIONS = [
+    { name: '川西', spots: '鱼子西、四姑娘山', tip: '防高反提示' },
+    { name: '新疆', spots: '赛里木湖、喀纳斯', tip: '注意防吹风防晒' },
+    { name: '大理', spots: '洱海、喜洲古镇', tip: '享受慢生活' },
+    { name: '西安', spots: '兵马俑、大唐不夜城', tip: '探寻古都文化' },
+    { name: '北京', spots: '故宫、环球影城', tip: '感受古今交融' },
+    { name: '成都', spots: '大熊猫基地、太古里', tip: '品尝地道美食' },
+    { name: '杭州', spots: '西湖、灵隐寺', tip: '漫步如画江南' },
+    { name: '西藏', spots: '布达拉宫、纳木错', tip: '预防高原反应' },
+    { name: '厦门', spots: '鼓浪屿、环岛路', tip: '吹吹海边的风' }
+]
+
+const inspirationExamples = ref([
     {
         title: '📝 示例 1：Vibe Coding',
         content: `“Vibe Coding”是软件开发中一个新兴且定义较为宽泛的术语，指的是引导 AI 工具生成代码而不是手动编写代码的做法。
@@ -122,7 +143,7 @@ const INSPIRATION_EXAMPLES = [
 
 Vibe Coding是一种新的编程方式，用户可以用自然语言表达意图，AI 会将这些想法转换为可执行代码。Vibe Coding的目标是创建一个人工智能驱动的开发环境，在该环境中，AI 智能体可作为编码助手，实时提出建议、自动执行繁琐的流程，甚至生成标准的代码库结构。
 
-通过优先进行实验，然后再优化结构和性能，Vibe Coding采用了一种“先编码，后优化”的思维方式。这为开发者提供了机会，使他们能够先构建，再优化。此外，在敏捷框架中，Vibe Coding符合快速原型设计、迭代开发和周期性反馈循环的原则。这使企业能够专注于这些原则，同时促进创新、本能式问题解决能力以及灵活的编码能力。然而，AI 只能生成代码，而真正的创造力、目标一致性以及跳出固有框架的思维仍然是人类独有的，因此人类的参与和监督非常重要，不能被取代。`
+通过优先进行实验，然后再优化结构和性能，Vibe Coding采用了一种“先编码，后优化”的思维方式。这为开发者提供了机会，使他们能够先构建，再优化。此外，在敏捷框架中，Vibe Coding符合快速原型设计、迭代开发和周期性反馈循环原则。这使企业能够专注于这些原则，同时促进创新、本能式问题解决能力以及灵活的编码能力。然而，AI 只能生成代码，而真正的创造力、目标一致性以及跳出固有框架的思维仍然是人类独有的，因此人类的参与和监督非常重要，不能被取代。`
     },
     {
         title: '🔍 示例 2：张无忌',
@@ -136,7 +157,7 @@ Vibe Coding是一种新的编程方式，用户可以用自然语言表达意图
         title: '🏔️ 示例 4：川西旅游规划',
         content: '我想去川西旅游，请帮我规划一个 5 天左右的自驾游行程。需要包含：必去景点（如鱼子西、四姑娘山）、住宿建议、防高反提示、以及每个站点的特色体验。'
     }
-]
+])
 
 // 引导页脑图数据
 const INTRO_DATA = {
@@ -183,11 +204,56 @@ const listParentPriorityMap = new Map<string, number>()
 const priorityParentSet = new Set<string>()
 
 const handleMessage = (event: MessageEvent) => {
+    // 必须验证消息来源，防止响应主编辑器或其他实例的导出请求
+    if (event.source !== previewIframe.value?.contentWindow) return
+
     if (event.data && event.data.type === 'ready') {
-        if (event.source === previewIframe.value?.contentWindow) {
-            previewReady.value = true
-        }
+        previewReady.value = true
+    } else if (event.data && event.data.type === 'exportDataResult') {
+        const { format, content } = event.data
+        handleDownload(format, content)
     }
+}
+
+const handleExport = (format: string) => {
+    postToPreview('exportData', { format })
+    showExportDropdown.value = false
+}
+
+const handleDownload = (format: string, content: any) => {
+    let blob: Blob
+    let filename = `ai_mindmap_${new Date().getTime()}`
+
+    if (format === 'png' || format === 'jpg') {
+        const byteString = atob(content.split(',')[1])
+        const mimeString = content.split(',')[0].split(':')[1].split(';')[0]
+        const ab = new ArrayBuffer(byteString.length)
+        const ia = new Uint8Array(ab)
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i)
+        }
+        blob = new Blob([ab], { type: mimeString })
+        filename += `.${format}`
+    } else if (format === 'svg') {
+        blob = new Blob([content], { type: 'image/svg+xml;charset=utf-8' })
+        filename += '.svg'
+    } else if (format === 'markdown') {
+        blob = new Blob([content], { type: 'text/markdown;charset=utf-8' })
+        filename += '.md'
+    } else {
+        const jsonStr = typeof content === 'string' ? content : JSON.stringify(content, null, 2)
+        blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' })
+        filename += '.km'
+    }
+
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
 }
 
 onMounted(() => {
@@ -211,6 +277,15 @@ const show = async () => {
     addedNodesSet.clear()
     listParentPriorityMap.clear()
     priorityParentSet.clear()
+
+    // 随机化示例内容
+    const hero = PROTAGONISTS[Math.floor(Math.random() * PROTAGONISTS.length)]
+    inspirationExamples.value[1].title = `🔍 示例 2：${hero}`
+    inspirationExamples.value[1].content = hero
+
+    const dest = DESTINATIONS[Math.floor(Math.random() * DESTINATIONS.length)]
+    inspirationExamples.value[3].title = `🏔️ 示例 4：${dest.name}旅游规划`
+    inspirationExamples.value[3].content = `我想去${dest.name}旅游，请帮我规划一个 5 天左右的自驾游行程。需要包含：必去景点（如${dest.spots}）、住宿建议、${dest.tip}、以及每个站点的特色体验。`
 
     // 等待并加载引导说明脑图
     let attempts = 0
@@ -289,6 +364,12 @@ const handleGenerate = async () => {
     priorityParentSet.clear()
     finalResult.value = null
 
+    // 重新初始化预览 iframe，防止之前的位移影响视觉
+    previewReady.value = false
+    if (previewIframe.value) {
+        previewIframe.value.src = '/kityminder/index.html?mode=preview&t=' + Date.now()
+    }
+
     // 等待 Iframe Ready
     const checkReady = async () => {
         let attempts = 0
@@ -302,7 +383,7 @@ const handleGenerate = async () => {
     // 清空预览区域的旧内容，并显示初始加载状态
     postToPreview('importJson', {
         data: {
-            root: { data: { text: '正在思考...' }, children: [] },
+            root: { data: { text: '正在生成...' }, children: [] },
             theme: 'classic-compact',
             template: 'right'
         }
@@ -389,67 +470,31 @@ defineExpose({ show })
     margin: 0;
 }
 
-.header-center {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-}
-
-.ai-progress-info {
+.header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 16px;
-    background: #f8fafc;
-    border: 1px solid var(--border-glass);
-    border-radius: var(--radius-full);
-    font-size: 13px;
 }
 
-.status-tag {
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
+/* AI 预览工具栏 */
+.preview-toolbar {
+    height: 48px;
+    background: white;
+    border-bottom: 1px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 10;
 }
 
-.status-running {
-    background: #eff6ff;
-    color: #3b82f6;
+.toolbar-left {
+    display: flex;
+    align-items: center;
 }
 
-.status-done {
-    background: #f0fdf4;
-    color: #10b981;
-}
-
-.node-count strong {
-    color: var(--color-primary);
-    font-size: 15px;
-}
-
-.pulse-dot {
-    width: 8px;
-    height: 8px;
-    background: #3b82f6;
-    border-radius: 50%;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
-
-    50% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-
-    100% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
+.toolbar-right {
+    display: flex;
+    align-items: center;
 }
 
 .close-btn {
@@ -472,10 +517,65 @@ defineExpose({ show })
     border-color: #fecaca;
 }
 
+.ai-export-container {
+    position: relative;
+    /* margin-right: 12px; */
+}
+
+.ai-export-btn {
+    padding: 6px 16px;
+    background: white;
+    border: 1px solid var(--border-glass);
+    color: var(--color-text-main);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ai-export-btn:hover {
+    background: #f8fafc;
+}
+
+.ai-export-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 160px;
+    background: white;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-export-menu button {
+    width: 100%;
+    padding: 8px 12px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--color-text-main);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ai-export-menu button:hover {
+    background: #f1f5f9;
+    color: var(--color-primary);
+}
+
 /* 布局拆分 */
 .dialog-body {
     flex: 1;
     overflow: hidden;
+    padding-top: 0 !important;
 }
 
 .layout-split {
@@ -485,7 +585,7 @@ defineExpose({ show })
 
 .layout-left {
     width: 380px;
-    padding-right: 16px;
+    padding: 16px;
     border-right: 1px solid var(--border-glass);
     display: flex;
     flex-direction: column;
@@ -565,11 +665,13 @@ defineExpose({ show })
     background: #f1f5f9;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .preview-container {
+    flex: 1;
     width: 100%;
-    height: 100%;
 }
 
 .preview-iframe {

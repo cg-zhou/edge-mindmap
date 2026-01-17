@@ -19,6 +19,23 @@
             <span class="status-text">{{ fileStore.saveState.message }}</span>
             <span v-if="lastSaveTime" class="status-time">{{ lastSaveTime }}</span>
           </span>
+
+          <!-- 导出菜单 -->
+          <div class="export-container">
+            <button class="export-btn" @click="showExportDropdown = !showExportDropdown">
+              导出
+            </button>
+            <transition name="fade">
+              <div v-if="showExportDropdown" class="export-menu" @click.stop>
+                <div class="menu-header">导出脑图</div>
+                <button @click="handleExport('png')">PNG 图片 (.png)</button>
+                <button @click="handleExport('svg')">SVG 矢量图 (.svg)</button>
+                <button @click="handleExport('markdown')">Markdown 格式 (.md)</button>
+                <button @click="handleExport('json')">KityMinder 格式 (.km)</button>
+              </div>
+            </transition>
+          </div>
+
           <button class="save-btn" @click="handleSave" :disabled="fileStore.saveState.status === 'saving'">
             保存
           </button>
@@ -68,11 +85,13 @@ const fileStore = useFileStore()
 
 // 引用
 const aiDialogRef = ref<any>(null)
+const editorRef = ref<any>(null)
 
 // 状态
 const selectedFileId = ref<string | null>(null)
 const currentData = ref<any>(null)
 const showSidebar = ref(true)
+const showExportDropdown = ref(false)
 const hasChanges = ref(false)
 const lastSaveTime = ref<string>('')
 const isLoadingFile = ref(false)  // 标记是否正在加载文件
@@ -235,7 +254,13 @@ const handleSave = async () => {
     console.error('保存失败:', err)
   }
 }
-
+// 导出脑图
+const handleExport = (format: any) => {
+  if (editorRef.value) {
+    editorRef.value.exportData(format)
+  }
+  showExportDropdown.value = false
+}
 // 自动保存 - 防抖实现
 const triggerAutoSave = async () => {
   if (autoSaveTimer) {
@@ -548,5 +573,71 @@ onBeforeUnmount(() => {
   background: rgba(0, 0, 0, 0.5);
   z-index: 999;
   backdrop-filter: blur(2px);
+}
+
+/* 导出菜单 */
+.export-container {
+  position: relative;
+}
+
+.export-btn {
+  padding: 6px 16px;
+  background: white;
+  border: 1px solid var(--border-glass);
+  color: var(--color-text-main);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.export-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 180px;
+  background: white;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-header {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.export-menu button {
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--color-text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-menu button:hover {
+  background: #f1f5f9;
+  color: var(--color-primary);
 }
 </style>

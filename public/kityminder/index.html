@@ -288,6 +288,16 @@
                 { type: "exportJson", data: data },
                 "*"
               );
+            } else if (res.type === "exportData") {
+              // 处理多种格式导出 (png, jpg, svg, markdown, json/km)
+              var format = res.format || 'json';
+              window.minder.exportData(format).then(function(content) {
+                window.parent.postMessage({
+                  type: 'exportDataResult',
+                  format: format,
+                  content: content
+                }, '*');
+              });
             }
           });
         });
