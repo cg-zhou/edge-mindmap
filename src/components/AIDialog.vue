@@ -1,7 +1,7 @@
 <template>
     <transition name="dialog-fade">
-        <div v-if="isVisible" class="dialog-overlay" @click="handleClose">
-            <div class="dialog-content ai-dialog" @click.stop>
+        <div v-if="isVisible" class="dialog-overlay">
+            <div class="dialog-content ai-dialog">
                 <!-- 标题栏：对齐主页工具栏风格 -->
                 <header class="ai-header">
                     <div class="header-left">
@@ -35,11 +35,20 @@
                         <!-- 左侧：工作面板 -->
                         <div class="layout-left">
                             <div class="ai-hint">
-                                在这里输入或粘贴您的想法，AI 会自动为您梳理层级结构并即时在右侧绘图。
+                                输入一些想法或关键词，使用 AI 辅助创作思维导图：
+                            </div>
+
+                            <!-- 灵感标签 -->
+                            <div class="inspiration-tags">
+                                <button v-for="tag in INSPIRATION_EXAMPLES" :key="tag.title" class="tag-item"
+                                    @click="useInspiration(tag)">
+                                    <span class="tag-text">{{ tag.title }}</span>
+                                </button>
                             </div>
 
                             <div class="flex-fill">
-                                <textarea v-model="prompt" placeholder="例如：整理项目启动会的议程、总结一篇深度好文的要点、或是规划下个季度的学习计划..."
+                                <textarea v-model="prompt"
+                                    placeholder="试试看：&#10;1. 粘贴一段复杂的文章，让我帮你理清逻辑&#10;2. 输入一个简单的词（如‘元宇宙’），看我为你发散脑洞&#10;3. 描述一个项目目标，自动生成执行计划..."
                                     class="ai-textarea" :disabled="isGenerating"></textarea>
                             </div>
 
@@ -96,23 +105,56 @@ const previewIframe = ref<HTMLIFrameElement | null>(null)
 const previewReady = ref(false)
 const finalResult = ref<any>(null)
 
+const useInspiration = (tag: typeof INSPIRATION_EXAMPLES[0]) => {
+    if (isGenerating.value) return
+    prompt.value = tag.content
+}
+
+// 灵感示例数据
+const INSPIRATION_EXAMPLES = [
+    {
+        title: '📝 示例 1：Vibe Coding',
+        content: `“Vibe Coding”是软件开发中一个新兴且定义较为宽泛的术语，指的是引导 AI 工具生成代码而不是手动编写代码的做法。
+
+在软件工程中，开发正在从严格的手动编码转向更灵活、由 AI 驱动的方式，而 Vibe Coding正处于这一变革的前沿。Vibe Coding是由著名计算机科学家 Andrej Karpathy 在 2025 年 2 月提出的，并强调了 AI 工具在软件开发中的重要性。
+
+这一概念与人工智能 (AI) 技术的发展趋势相一致，尤其是大语言模型 (LLM)，如 ChatGPT、Claude 以及 OpenAI 的 Codex，它们帮助开发者保持创作状态并实现编码工作的自动化。
+
+Vibe Coding是一种新的编程方式，用户可以用自然语言表达意图，AI 会将这些想法转换为可执行代码。Vibe Coding的目标是创建一个人工智能驱动的开发环境，在该环境中，AI 智能体可作为编码助手，实时提出建议、自动执行繁琐的流程，甚至生成标准的代码库结构。
+
+通过优先进行实验，然后再优化结构和性能，Vibe Coding采用了一种“先编码，后优化”的思维方式。这为开发者提供了机会，使他们能够先构建，再优化。此外，在敏捷框架中，Vibe Coding符合快速原型设计、迭代开发和周期性反馈循环的原则。这使企业能够专注于这些原则，同时促进创新、本能式问题解决能力以及灵活的编码能力。然而，AI 只能生成代码，而真正的创造力、目标一致性以及跳出固有框架的思维仍然是人类独有的，因此人类的参与和监督非常重要，不能被取代。`
+    },
+    {
+        title: '🔍 示例 2：张无忌',
+        content: '张无忌'
+    },
+    {
+        title: '📅 示例 3：周报计划',
+        content: '一份的项目周报思维导图框架，包含：本周进展、问题与方案、下周计划、风险预警'
+    },
+    {
+        title: '🏔️ 示例 4：川西旅游规划',
+        content: '我想去川西旅游，请帮我规划一个 5 天左右的自驾游行程。需要包含：必去景点（如鱼子西、四姑娘山）、住宿建议、防高反提示、以及每个站点的特色体验。'
+    }
+]
+
 // 引导页脑图数据
 const INTRO_DATA = {
     root: {
         data: { text: '✨ AI 创作' },
         children: [
             {
-                data: { text: '💡 功能说明' },
+                data: { text: '💡 深度提炼' },
                 children: [
-                    { data: { text: '长文转脑图，智能提炼核心观点' } },
-                    { data: { text: '层级自动分析' } }
+                    { data: { text: '长文转脑图，秒出核心观点' } },
+                    { data: { text: '自动理清逻辑层级' } }
                 ]
             },
             {
-                data: { text: '🚀 智能补全' },
+                data: { text: '🚀 概念发散' },
                 children: [
-                    { data: { text: '短文补全，50字内自动发散思路' } },
-                    { data: { text: '支持扩写，根据背景知识增强深度' } }
+                    { data: { text: '输入词组，为你补全思维脉络' } },
+                    { data: { text: '基于大模型能力增强深度' } }
                 ]
             },
             {
@@ -125,7 +167,7 @@ const INTRO_DATA = {
             {
                 data: { text: '▶️ 操作简单' },
                 children: [
-                    { data: { text: '输入点什么' } },
+                    { data: { text: '输入一些想法或关键词' } },
                     { data: { text: '点击 “开始创作” ' } }
                 ]
             }
@@ -137,6 +179,8 @@ const INTRO_DATA = {
 
 // 增量更新维护的状态
 let addedNodesSet = new Set<string>()
+const listParentPriorityMap = new Map<string, number>()
+const priorityParentSet = new Set<string>()
 
 const handleMessage = (event: MessageEvent) => {
     if (event.data && event.data.type === 'ready') {
@@ -165,6 +209,8 @@ const show = async () => {
     finalResult.value = null
     previewReady.value = false
     addedNodesSet.clear()
+    listParentPriorityMap.clear()
+    priorityParentSet.clear()
 
     // 等待并加载引导说明脑图
     let attempts = 0
@@ -196,6 +242,18 @@ const syncNodesIncrementally = (rawNodes: any[]) => {
         const nodeKey = `${node.parent || 'ROOT'}-${node.text}`
 
         if (!addedNodesSet.has(nodeKey)) {
+            // 处理优先级逻辑：如果父节点被标记为 isList，则自动递增分配 priority
+            if (node.parent && priorityParentSet.has(node.parent)) {
+                const currentCount = (listParentPriorityMap.get(node.parent) || 0) + 1
+                listParentPriorityMap.set(node.parent, currentCount)
+                node.priority = currentCount
+            }
+
+            // 如果本节点被标记为 isList，记录它
+            if (node.isList) {
+                priorityParentSet.add(node.text)
+            }
+
             if (!node.parent) {
                 // 根节点：使用 index.html 既有的 importJson 逻辑
                 postToPreview('importJson', {
@@ -227,6 +285,8 @@ const handleGenerate = async () => {
     currentStep.value = 0
     generatedCount.value = 0
     addedNodesSet.clear()
+    listParentPriorityMap.clear()
+    priorityParentSet.clear()
     finalResult.value = null
 
     // 等待 Iframe Ready
@@ -242,7 +302,7 @@ const handleGenerate = async () => {
     // 清空预览区域的旧内容，并显示初始加载状态
     postToPreview('importJson', {
         data: {
-            root: { data: { text: '正在规划结构...' }, children: [] },
+            root: { data: { text: '正在思考...' }, children: [] },
             theme: 'classic-compact',
             template: 'right'
         }
@@ -292,10 +352,9 @@ defineExpose({ show })
 
 <style scoped>
 .ai-dialog {
-    width: 100vw !important;
+    width: 85vw !important;
     max-width: none !important;
-    height: 100vh !important;
-    border-radius: 0 !important;
+    height: 85vh !important;
     display: flex;
     flex-direction: column;
     background: white;
@@ -426,12 +485,12 @@ defineExpose({ show })
 
 .layout-left {
     width: 380px;
-    padding: 24px;
+    padding-right: 16px;
     border-right: 1px solid var(--border-glass);
     display: flex;
     flex-direction: column;
     background: #ffffff;
-    gap: 16px;
+    gap: 10px;
 }
 
 .ai-hint {
@@ -440,12 +499,41 @@ defineExpose({ show })
     line-height: 1.6;
 }
 
+.inspiration-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.tag-item {
+    padding: 6px 12px;
+    background-color: #f0f7ff;
+    color: var(--color-primary);
+    border: 1px dashed var(--color-primary);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tag-item:hover {
+    background-color: #e1f0ff;
+    border-style: solid;
+    transform: translateY(-1px);
+}
+
 .ai-textarea {
     width: 100%;
     height: 100%;
-    padding: 16px;
+    padding: 12px;
     border: 1px solid #e5e7eb;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-sm);
     resize: none;
     line-height: 1.6;
     transition: all 0.2s;
