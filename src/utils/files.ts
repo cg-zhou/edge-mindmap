@@ -587,8 +587,9 @@ class FileService {
     try {
       const response = await this.api.post('/api/share', { id: fileId, json, svg, title })
       if (response.data && response.data.shareUrl) {
-        // 返回完整的分享 URL
-        const base = window.location.origin
+        // 关键修复：使用 VITE_API_BASE 域名作为分享链接基准
+        // 避开 ESA Pages 预览域名（.aliyun-esa.net）无法触发 Worker 路由的问题
+        const base = API_BASE
         return `${base}${response.data.shareUrl}`
       }
       throw new Error('分享失败')

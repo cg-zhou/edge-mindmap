@@ -127,7 +127,8 @@ const handleShare = async () => {
 
   // 1. 获取分享状态
   const shareId = selectedFile.value.id
-  const targetUrl = `${window.location.origin}/share/${shareId}`
+  const base = import.meta.env.VITE_API_BASE || ''
+  const targetUrl = `${base}/share/${shareId}`
   
   // 2. 如果已经分享过，直接带链接打开；否则打开引导页（不传参数）
   if (selectedFile.value.isShared) {

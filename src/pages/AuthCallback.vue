@@ -49,7 +49,7 @@ onMounted(async () => {
       
       if (provider === 'microsoft') {
         // Microsoft: 调用后端换取 token
-        const apiBase = import.meta.env.VITE_API_BASE || 'https://mindmap.cg-zhou.top'
+        const apiBase = import.meta.env.VITE_API_BASE || ''
         const response = await fetch(`${apiBase}/api/auth/microsoft?code=${code}`, {
           signal: controller.signal
         })
