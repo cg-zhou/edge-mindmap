@@ -22,9 +22,22 @@ class KVService {
     this.kv = new EdgeKV({ namespace: CONFIG.EDGEKV_NAMESPACE });
   }
 
-  // 内部工具：安全化 Key 命名 (替换冒号为连字符)
+  // 内部工具：安全化 Key 命名 (长度<=50，字符为 a-z A-Z 0-9 _ -)
   _s(key) {
-    return key.replace(/:/g, '-');
+    // 1. 基础清理
+    let safe = key.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    
+    // 2. 长度控制：如果超过 50，截断并附加确定性哈希
+    if (safe.length > 50) {
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        hash = ((hash << 5) - hash) + key.charCodeAt(i);
+        hash |= 0; 
+      }
+      const hashStr = Math.abs(hash).toString(36);
+      safe = safe.substring(0, 42) + '-' + hashStr;
+    }
+    return safe;
   }
 
   async get(key) {
@@ -321,8 +334,10 @@ async function handleMicrosoftOAuth(code, kvService) {
 
     const tokenData = await tokenResponse.json();
     
-    if (!tokenData.id_token) {
-      return { success: false, error: tokenData.error_description || 'No ID token received' };
+    if (!tokenData || !tokenData.id_token) {
+      const errorMsg = tokenData?.error_description || tokenData?.error || 'No ID token received';
+      const statusInfo = `(Status: ${tokenResponse.status})`;
+      return { success: false, error: `${errorMsg} ${statusInfo}` };
     }
 
     // 从 ID Token 中解析用户信息（不调用 Graph API）
@@ -374,7 +389,11 @@ async function handleMicrosoftOAuth(code, kvService) {
 
     return { success: true, token: jwtToken, user };
   } catch (error) {
-    return { success: false, error: 'Internal server error' };
+    return { 
+      success: false, 
+      error: `Auth process failed: ${error.message}`,
+      stack: error.stack
+    };
   }
 }
 

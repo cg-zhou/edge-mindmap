@@ -95,16 +95,17 @@ const simulationData = {
 }
 
 const extraNodes = [
-  { parentText: 'Demo', text: '🚀 极速' },
-  { parentText: '🚀 极速', text: '阿里云 ESA 加速' },
-  { parentText: '🚀 极速', text: '多级缓存' },
-  { parentText: 'Demo', text: '✨ 多种视图' },
-  { parentText: '✨ 多种视图', text: '思维导图', priority: 1 },
-  { parentText: '✨ 多种视图', text: '组织结构图', priority: 2 },
-  { parentText: '✨ 多种视图', text: '鱼骨图', priority: 3 },
-  { parentText: 'Demo', text: '📅 进度标识' },
-  { parentText: '📅 进度标识', text: '持续推进', progress: 4 },
-  { parentText: '📅 进度标识', text: '任务完成', progress: 9 }
+  { parentText: 'Demo', text: '极速响应', priority: 1 },
+  { parentText: '极速响应', text: '🚀 阿里云 ESA 加速' },
+  { parentText: '极速响应', text: '⚡ 多级缓存' },
+
+  { parentText: 'Demo', text: 'AI 创作', priority: 2 },
+  { parentText: 'AI 创作', text: '✨ 通义千问大模型驱动' },
+  { parentText: 'AI 创作', text: '💡 灵感自动扩充' },
+
+  { parentText: 'Demo', text: '丰富功能', priority: 3 },
+  { parentText: '丰富功能', text: '🎨 多样化布局', note: '思维导图\n组织结构图\n鱼骨图' },
+  { parentText: '丰富功能', text: '导出/分享', progress: 9 }
 ]
 
 function onPreviewLoad() {
@@ -134,7 +135,7 @@ function startSimulation() {
       }, '*')
       
       step++
-      setTimeout(update, 1000) // 缩短间隔至 1s
+      setTimeout(update, 600) // 缩短间隔
     } else {
       setTimeout(() => {
         // 重启模拟：只有这时才用 importJson 还原初始状态
