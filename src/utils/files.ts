@@ -300,7 +300,8 @@ class FileService {
           id: newFile.id,
           name: newFile.title, // 服务端期望 name 而不是 title
           content: newFile.content,
-          updatedAt: now // 服务端期望数字时间戳
+          updatedAt: now, // 服务端期望数字时间戳
+          isShared: newFile.isShared || false
         },
         fileList: newFileList
       })
@@ -339,7 +340,8 @@ class FileService {
       
       const cloudFile: StoredFile = {
         ...data,
-        title: data.title || data.name || 'Untitled'
+        title: data.title || data.name || 'Untitled',
+        isShared: data.isShared !== undefined ? data.isShared : (localFile?.isShared)
       }
       
       localStorageService.setFile(user.id, cloudFile)
@@ -366,7 +368,8 @@ class FileService {
       ) {
         const cloudFile: StoredFile = {
           ...data,
-          title: data.title || data.name || 'Untitled'
+          title: data.title || data.name || 'Untitled',
+          isShared: data.isShared !== undefined ? data.isShared : (localFile?.isShared)
         }
         localStorageService.setFile(userId, cloudFile)
       }
@@ -455,7 +458,8 @@ class FileService {
               id: fileData.id,
               name: fileData.title,
               content: fileData.content,
-              updatedAt: now
+              updatedAt: now,
+              isShared: fileData.isShared || false
             },
             fileList: fileList
           }
@@ -467,7 +471,8 @@ class FileService {
             id: fileData.id,
             name: fileData.title,
             content: fileData.content,
-            updatedAt: now
+            updatedAt: now,
+            isShared: fileData.isShared || false
           },
           fileList: fileList
         })

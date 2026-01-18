@@ -314,6 +314,7 @@ async function handleRequest(request) {
           name: file.name,
           content: file.content,
           updatedAt: file.updatedAt,
+          isShared: file.isShared || false,
           _deleted: file._deleted || false
         });
       }
@@ -349,6 +350,7 @@ async function handleRequest(request) {
         name: file.name,
         content: file.content,
         updatedAt: file.updatedAt,
+        isShared: file.isShared || false,
         _deleted: file._deleted || false
       });
 
@@ -383,6 +385,7 @@ async function handleRequest(request) {
         name: file.name,
         content: file.content,
         updatedAt: file.updatedAt,
+        isShared: file.isShared || false,
         _deleted: true
       });
 
