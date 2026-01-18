@@ -341,7 +341,7 @@ class FileService {
       const cloudFile: StoredFile = {
         ...data,
         title: data.title || data.name || 'Untitled',
-        isShared: data.isShared !== undefined ? data.isShared : (localFile?.isShared)
+        isShared: data.isShared !== undefined ? data.isShared : false
       }
       
       localStorageService.setFile(user.id, cloudFile)
@@ -369,7 +369,7 @@ class FileService {
         const cloudFile: StoredFile = {
           ...data,
           title: data.title || data.name || 'Untitled',
-          isShared: data.isShared !== undefined ? data.isShared : (localFile?.isShared)
+          isShared: data.isShared !== undefined ? data.isShared : (localFile ? (localFile as any).isShared : false)
         }
         localStorageService.setFile(userId, cloudFile)
       }
