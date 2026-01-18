@@ -8,121 +8,45 @@
 
 # Edge Mindmap - 在线思维导图编辑器
 
-一个基于[阿里云 ESA](https://www.aliyun.com/product/esa) 边缘计算的高性能在线思维导图编辑器。支持实时保存、云端同步、OAuth 登录等功能。
+一个基于 [阿里云 ESA](https://www.aliyun.com/product/esa) 边缘计算的高性能在线思维导图编辑器。通过 AI 赋能和边缘分发，实现极速的创作与分享体验。
 
 ## ✨ 核心特性
 
-### 🏗️ 轻量级无服务架构
-- **边缘函数驱动**：所有后端逻辑运行在阿里云 ESA 边缘函数上
-- **边缘存储**：数据存储在 ESA EdgeKV 边缘存储中，无需管理数据库
-- **无传统服务端**：完全 Serverless 架构，零服务器运维
-- **就近服务**：边缘节点就近响应用户请求，极低延迟
+### 🤖 AI 创作
+- **零灵感启航**：集成阿里云百炼 **通义千问** 大模型，一键生成思维导图。
+- **增量渲染**：基于 **SSE (Server-Sent Events)** 流式传输技术，节点实时预览。
 
-### 🚀 性能优化
-- **本地优先策略**：文件内容本地缓存，秒速打开，后台同步
-- **智能缓存机制**：防止服务端返回旧数据，自动选择最新版本
+### 🌐 极速分享与 SEO 优化
+- **语义化直出**：边缘函数识别爬虫并渲染语义化 `<ul><li>` 结构，解决 SPA 站点的 SEO 难题。
+- **SVG 原生支持**：支持分享链接加 `.svg` 后缀直接输出矢量图，方便嵌入文档。
+- **零 API 加载**：分享页数据通过边缘函数直接注入 HTML，实现秒级开启。
 
-### 💾 数据管理
-- **实时自动保存**：编辑时自动保存，不丢失数据
-- **云端同步**：文件列表和内容均支持本地和云端同步
-- **时间戳对比**：对比本地和云端时间戳，确保数据一致性
-- **自动重试机制**：网络不稳定时自动重试，最多 3 次
+### 🏗️ 边缘架构设计
+- **边缘优先**：核心业务逻辑与高频读写在 ESA 边缘函数中处理，利用 **EdgeKV** 实现毫秒级响应。
+- **混合持久化**：采用 EdgeKV + 中心化存储的异步同步方案，兼顾边缘访问速度与数据长效稳固。
 
-### 👥 账号系统
-- **Microsoft OAuth 登录**：企业账号支持
-- **游客登录**：无需注册即可使用（共享账户）
-
-### 🎨 交互设计
-- **粒子背景动效**：响应式粒子系统，窗口缩放时自动适应
-- **流畅动画**：按钮点击爆裂效果，页面过渡动画
-- **暗色主题**：护眼设计，减少用户疲劳
-
-### 📝 编辑功能
-- **思维导图编辑**：基于 Mind Elixir 的完整编辑能力
-- **文件模板**：预设多个开箱即用的模板
-- **快速创建**：支持快速新建文件和模板选择
+### 🎨 卓越的编辑体验
+- **内核驱动**：基于 **KityMinder**，支持多种布局模式及丰富的样式编辑。
+- **本地优先**：采用本地缓存优先策略，结合自动重试机制，确保弱网下的编辑不中断。
 
 ## 🚀 快速开始
 
-### 1. 克隆项目
-```bash
-git clone https://github.com/cg-zhou/edge-mindmap
-cd edge-mindmap
-```
-
-### 2. 安装依赖
-```bash
-npm install
-# 或
-yarn install
-```
-
-### 3. 配置环境变量
+### 1. 配置环境变量
 复制 `.env.example` 到 `.env.local`：
-```bash
-cp .env.example .env.local
-```
-
-编辑 `.env.local`，填入你的配置：
 ```env
-# API 基础 URL
+# API 基础 URL (指向 ESA 边缘函数域名)
 VITE_API_BASE=https://your-api-domain.com
 
-# Microsoft OAuth
+# Microsoft OAuth 配置
 VITE_MICROSOFT_CLIENT_ID=your_client_id
-VITE_MICROSOFT_REDIRECT_URI=http://localhost:5173/auth/callback
 ```
 
-### 4. 启动开发服务器
+### 2. 开发与构建
 ```bash
-npm run dev
+yarn install
+yarn dev    # 本地开发
+yarn build  # 构建发布
 ```
-
-打开 http://localhost:5173 即可看到应用。
-
-### 5. 构建生产版本
-```bash
-npm run build
-```
-
-## 🔐 认证流程
-
-### Microsoft OAuth 登录
-1. 用户在首页点击 "Microsoft 登录"
-2. 重定向到 Microsoft 登录页面
-3. 用户授权后获得 `code`
-4. 前端将 `code` 发送到后端
-5. 后端用 `code` 和 `client_secret` 换取 ID Token
-6. 后端生成 JWT Token 返回给前端
-7. 前端保存 Token 到 localStorage，后续请求携带
-
-## 📝 主要 API 端点
-
-### 认证
-- `POST /api/auth/guest` - 游客登录
-- `GET /api/auth/microsoft?code=<code>` - Microsoft OAuth 回调
-- `GET /api/auth/me` - 获取当前用户信息
-
-### 文件管理
-- `GET /api/files` - 获取文件列表
-- `GET /api/files/:fileId` - 获取文件内容
-- `POST /api/files` - 创建文件
-- `PUT /api/files/:fileId` - 更新文件
-- `DELETE /api/files/:fileId` - 删除文件
-
-## 💾 数据同步策略
-
-### 文件列表
-- 每次获取时从云端获取最新列表
-- 与本地时间戳对比，选择较新的数据
-- 防止服务端返回旧数据
-
-### 文件内容
-- 优先返回本地缓存内容（秒速打开）
-- 后台异步从云端同步，有更新时自动刷新
-- 编辑时使用 500ms 轮询检测变化
-- 自动保存失败时重试 3 次，间隔 30 秒
 
 ## 📄 许可证
-
 MIT
