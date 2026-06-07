@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edge Mindmap Preview</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #ffffff;
+      }
+      body {
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+        background: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe id="preview-frame" title="Animated mindmap preview"></iframe>
+
+    <script type="module">
+      const previewFrame = document.getElementById('preview-frame');
+      const base = import.meta.env.BASE_URL || '/';
+      previewFrame.src = `${base}kityminder/index.html?mode=preview`;
+
+      const simulationData = {
+        template: 'right',
+        theme: 'classic-compact',
+        root: { data: { text: 'Mindmap', background: '#2A5FBD', color: '#fff' }, children: [] },
+      };
+
+      const extraNodes = [
+        { parentText: 'Mindmap', node: { text: '极速响应', priority: 1 } },
+        { parentText: '极速响应', node: { text: '🚀 阿里云 ESA 加速' } },
+        { parentText: '极速响应', node: { text: '⚡ 多级缓存' } },
+        { parentText: 'Mindmap', node: { text: 'AI 创作', priority: 2 } },
+        { parentText: 'AI 创作', node: { text: '✨ 通义千问大模型驱动' } },
+        { parentText: 'AI 创作', node: { text: '💡 灵感自动扩充' } },
+        { parentText: 'Mindmap', node: { text: '丰富功能', priority: 3 } },
+        { parentText: '丰富功能', node: { text: '🎨 多样化布局', note: '思维导图\n组织结构图\n鱼骨图' } },
+        { parentText: '丰富功能', node: { text: '导出/分享', progress: 9 } },
+      ];
+
+      let nextTimer = 0;
+      let resetTimer = 0;
+      let step = 0;
+
+      const clearTimers = () => {
+        window.clearTimeout(nextTimer);
+        window.clearTimeout(resetTimer);
+      };
+
+      const postToPreview = (payload) => {
+        previewFrame.contentWindow?.postMessage(payload, '*');
+      };
+
+      const runSequence = () => {
+        if (step < extraNodes.length) {
+          const payload = extraNodes[step++];
+          postToPreview({ type: 'appendNode', parentText: payload.parentText, node: payload.node });
+          nextTimer = window.setTimeout(runSequence, 600);
+          return;
+        }
+
+        resetTimer = window.setTimeout(() => {
+          step = 0;
+          postToPreview({ type: 'importJson', data: simulationData });
+          nextTimer = window.setTimeout(runSequence, 1200);
+        }, 5000);
+      };
+
+      const startPreview = () => {
+        clearTimers();
+        step = 0;
+        postToPreview({ type: 'importJson', data: simulationData });
+        nextTimer = window.setTimeout(runSequence, 1200);
+      };
+
+      window.addEventListener('message', (event) => {
+        if (event.source === previewFrame.contentWindow && event.data?.type === 'ready') {
+          startPreview();
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          clearTimers();
+        } else {
+          startPreview();
+        }
+      });
+
+      window.addEventListener('beforeunload', clearTimers);
+    </script>
+  </body>
+</html>
