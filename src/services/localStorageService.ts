@@ -1,7 +1,7 @@
 /**
  * localStorage 本地存储服务
  * 存储文件列表和所有文件内容
- * 关键：所有key都包含userId，确保不同用户的数据隔离
+ * 当前使用固定的本地用户命名空间，保留既有游客数据。
  */
 
 import type { File, FileListItem } from '@/types/files'
@@ -18,7 +18,7 @@ interface StoredFileList {
 const STORAGE_KEYS = {
   FILE_LIST: (userId: string) => `mindmap:${userId}:fileList`,
   FILE_PREFIX: (userId: string) => `mindmap:${userId}:file:`,
-  SYNC_TIMESTAMP: (userId: string) => `mindmap:${userId}:syncTimestamp`
+  EXAMPLES_SEEDED: 'mindmap:examples-seeded'
 }
 
 class LocalStorageService {
@@ -59,6 +59,14 @@ class LocalStorageService {
    */
   deleteFile(userId: string, fileId: string): void {
     localStorage.removeItem(STORAGE_KEYS.FILE_PREFIX(userId) + fileId)
+  }
+
+  hasSeededExamples(): boolean {
+    return localStorage.getItem(STORAGE_KEYS.EXAMPLES_SEEDED) === '1'
+  }
+
+  markExamplesSeeded(): void {
+    localStorage.setItem(STORAGE_KEYS.EXAMPLES_SEEDED, '1')
   }
 
   /**

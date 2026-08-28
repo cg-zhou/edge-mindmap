@@ -105,14 +105,6 @@ body {
 
 .btn-secondary:hover {
   background: #e5e7eb;
-}
-  background: var(--color-secondary);
-  color: var(--color-text-main);
-  border: 1px solid var(--border-glass);
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
   transform: translateY(-1px);
 }
 

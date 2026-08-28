@@ -1,5 +1,3 @@
-import authService from './auth'
-
 const API_BASE = import.meta.env.VITE_API_BASE || ''
 
 export interface AINode {
@@ -82,13 +80,10 @@ class AIService {
    * 调用 AI 生成脑图 JSON (SSE 流式版本)
    */
   async generateMindmap(prompt: string, onContent?: (parsed: any, rawNodes: AINode[]) => void) {
-    const token = authService.getToken()
-    
     try {
       const response = await fetch(`${API_BASE}/api/ai/generate`, {
         method: 'POST',
         headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ prompt })

@@ -10,6 +10,10 @@ This project is powered by [Alibaba Cloud ESA](https://www.alibabacloud.com/prod
 
 A high-performance online mind map editor powered by [Alibaba Cloud ESA](https://www.aliyun.com/product/esa) edge computing. Unleash creativity and sharing with AI-driven insights and edge acceleration.
 
+## Project Status
+
+The `contest-final` tag archives the competition version. The current version focuses on showcasing and lightweight creation with local file management, AI creation, and public sharing.
+
 ## ✨ Key Features
 
 ### 🤖 AI Creation
@@ -21,13 +25,13 @@ A high-performance online mind map editor powered by [Alibaba Cloud ESA](https:/
 - **Native SVG Support**: Simply append `.svg` to share links to get high-quality vector images for documents.
 - **Instant Loading**: Sharing data is injected directly into HTML by edge workers, bypassing client-side API calls.
 
-### 🏗️ Edge-First Architecture
-- **Edge Acceleration**: Core business logic and high-frequency I/O are handled by ESA Workers using **EdgeKV** for millisecond responses.
-- **Hybrid Persistence**: Features a robust EdgeKV + Central Storage synchronization strategy to balance speed and data durability.
+### 🏗️ Lightweight Architecture
+- **Local File Management**: Start without an account; mind maps stay in the current browser.
+- **Edge Features**: AI creation and public sharing continue to run on ESA edge functions.
 
 ### 🎨 Premium Editing Experience
 - **KityMinder Core**: Supports multiple layout modes and deep style customization.
-- **Local-First Sync**: Ensures uninterrupted editing during network flickers with automated retry logic and local caching.
+- **Ready-to-Use Examples**: First-time visitors get curated examples and can also start from a template, AI prompt, or blank map.
 
 ## 🚀 Quick Start
 
@@ -37,8 +41,6 @@ Copy `.env.example` to `.env.local`:
 # API Base URL (Your ESA Worker Domain)
 VITE_API_BASE=https://your-api-domain.com
 
-# Microsoft OAuth
-VITE_MICROSOFT_CLIENT_ID=your_client_id
 ```
 
 ### 2. Development

@@ -1,23 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuthStore } from './stores/auth'
 import Toast from '@/components/Toast.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import InputDialog from '@/components/InputDialog.vue'
 import CreateFileDialogManager from '@/components/CreateFileDialogManager.vue'
 import { setToastInstance, setDialogInstance, setInputDialogInstance, setCreateFileDialogInstance } from '@/utils/message'
 
-const authStore = useAuthStore()
 const toastRef = ref<any>(null)
 const dialogRef = ref<any>(null)
 const inputDialogRef = ref<any>(null)
 const createFileDialogRef = ref<any>(null)
 
-onMounted(async () => {
-  if (!authStore.user) {
-    await authStore.initAuth()
-  }
-  
+onMounted(() => {
   // 注册 Toast、Dialog、InputDialog、CreateFileDialog 实例到全局服务
   if (toastRef.value) {
     setToastInstance(toastRef.value)

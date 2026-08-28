@@ -45,28 +45,16 @@
       </div>
     </div>
 
-    <!-- 底部 - 用户信息 -->
+    <!-- 底部 - 本地存储说明 -->
     <div class="panel-footer">
-      <div class="user-info">
-        <img
-          v-if="authStore.user?.avatar_url"
-          :src="authStore.user.avatar_url"
-          :alt="authStore.user?.name"
-          class="user-avatar"
-        />
-        <div v-else class="user-avatar-placeholder">{{ authStore.user?.name?.charAt(0) || '游' }}</div>
-        <div class="user-details">
-          <div class="user-name">{{ authStore.user?.name }}</div>
-        </div>
-      </div>
-      <button class="btn-logout" @click="logout">退出</button>
+      <span class="local-badge">本地保存</span>
+      <span class="local-tip">内容仅保存在当前浏览器</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
 import { useFileStore } from '@/stores/files'
 import { message, input } from '@/utils/message'
 
@@ -80,13 +68,11 @@ interface Emits {
   (e: 'create-file'): void
   (e: 'ai-create'): void
   (e: 'delete-file', fileId: string): void
-  (e: 'logout'): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const authStore = useAuthStore()
 const fileStore = useFileStore()
 
 const files = computed(() => fileStore.files)
@@ -151,10 +137,6 @@ const showFileMenu = (_event: MouseEvent, fileId: string, title: string) => {
   renameFile(fileId, title)
 }
 
-const logout = async () => {
-  // 直接触发事件，由 Dashboard 负责确认
-  emit('logout')
-}
 </script>
 
 <style scoped>
@@ -354,74 +336,27 @@ const logout = async () => {
 }
 
 .panel-footer {
-  padding: 16px;
+  padding: 12px 16px;
   border-top: 1px solid var(--border-glass);
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.user-info {
-  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.user-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  object-fit: cover;
-  border: 1px solid var(--border-glass);
-}
-
-.user-avatar-placeholder {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: #e5e7eb;
-  color: #4b5563;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.user-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.user-name {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--color-text-main);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.btn-logout {
-  width: 100%;
-  padding: 8px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  color: #4b5563;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
+.local-badge {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 11px;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.btn-logout:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
-  color: var(--color-danger);
+.local-tip {
+  color: var(--color-text-muted);
+  font-size: 11px;
 }
 
 </style>

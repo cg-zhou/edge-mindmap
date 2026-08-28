@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <aside class="sidebar" :class="{ collapsed: !showSidebar }">
       <FileListPanel :selectedFileId="selectedFileId" :loading="loading" @select-file="handleSelectFile"
-        @create-file="handleCreateFile" @ai-create="handleAICreate" @delete-file="handleDeleteFile" @logout="handleLogout" />
+        @create-file="handleCreateFile" @ai-create="handleAICreate" @delete-file="handleDeleteFile" />
     </aside>
 
     <!-- 主内容区 -->
@@ -80,7 +80,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 import { useFileStore } from '@/stores/files'
 import { dialog, message, file } from '@/utils/message'
 import KityMinderEditor from '@/components/KityMinderEditor.vue'
@@ -91,7 +90,6 @@ import fileService from '@/utils/files'
 
 const router = useRouter()
 const route = useRoute()
-const authStore = useAuthStore()
 const fileStore = useFileStore()
 
 // 引用
@@ -408,14 +406,6 @@ const triggerAutoSave = async () => {
     }
     autoSaveTimer = null
   }, 2000)
-}
-
-// 退出登录
-const handleLogout = async () => {
-  const confirmed = await dialog.confirmExit()
-  if (!confirmed) return
-  await authStore.logout()
-  router.push('/')
 }
 
 // 响应式处理

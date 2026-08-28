@@ -30,18 +30,15 @@
           </h1>
 
           <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="200">
-            边缘节点加速，实时保存，随时随地激发创意
+            边缘节点加速，AI 辅助梳理灵感，内容安全保存本地
           </p>
 
           <div class="hero-actions" data-aos="fade-up" data-aos-delay="300">
             <button class="btn-primary" @click="handleButtonClick">
-              <span>游客登录</span>
+              <span>立即体验</span>
               <svg class="icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M5 12h14m-7-7l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
-            </button>
-            <button class="btn-secondary" @click="handleLoginWithMicrosoft">
-              <span>Microsoft 登录</span>
             </button>
           </div>
         </div>
@@ -68,19 +65,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { message } from '@/utils/message'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
 
 const router = useRouter()
-const authStore = useAuthStore()
 const previewSrc = `${import.meta.env.BASE_URL}preview.html`
 const particleCanvas = ref<HTMLCanvasElement | null>(null)
-const loading = ref(false)
-
-const MICROSOFT_CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || ''
-const MICROSOFT_REDIRECT_URI = import.meta.env.VITE_MICROSOFT_REDIRECT_URI || 'http://localhost:5173/auth/callback'
 
 interface Particle {
   x: number
@@ -272,15 +262,6 @@ function animateParticles() {
   requestAnimationFrame(animateParticles)
 }
 
-function generateRandomState(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let state = ''
-  for (let i = 0; i < 32; i++) {
-    state += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return state
-}
-
 function createBurstEffect(e: Event) {
   const element = e.currentTarget as HTMLElement
   const rect = element.getBoundingClientRect()
@@ -320,50 +301,14 @@ const handleBadgeClick = (e: Event) => {
   }, 700)
 }
 
-const handleButtonClick = async (e: Event) => {
+const handleButtonClick = (e: Event) => {
   const button = e.currentTarget as HTMLButtonElement
   button.classList.add('clicked')
   createBurstEffect(e)
-
-  try {
-    loading.value = true
-    await authStore.guestLogin()
-    message.success('登录成功')
-    router.push('/dashboard')
-  } catch (err) {
-    message.error(err instanceof Error ? err.message : '登录失败')
-    loading.value = false
-  } finally {
-    setTimeout(() => {
-      button.classList.remove('clicked')
-    }, 600)
-  }
-}
-
-const loginWithMicrosoft = () => {
-  const state = generateRandomState()
-  sessionStorage.setItem('oauth_state', state)
-  sessionStorage.setItem('oauth_provider', 'microsoft')
-
-  const params = new URLSearchParams({
-    client_id: MICROSOFT_CLIENT_ID,
-    redirect_uri: MICROSOFT_REDIRECT_URI,
-    response_type: 'code',
-    scope: 'openid profile email',
-    state,
-    response_mode: 'query',
-  })
-
-  loading.value = true
-  window.location.href = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`
-}
-
-const handleLoginWithMicrosoft = (e: Event) => {
-  e.preventDefault()
-  createBurstEffect(e)
   setTimeout(() => {
-    loginWithMicrosoft()
-  }, 700)
+    router.push('/dashboard')
+  }, 350)
+  setTimeout(() => button.classList.remove('clicked'), 600)
 }
 
 onMounted(() => {
