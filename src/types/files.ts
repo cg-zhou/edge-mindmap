@@ -28,6 +28,8 @@ export interface File {
   createdAt: string
   updatedAt: string
   isShared?: boolean
+  shareId?: string
+  shareToken?: string
 }
 
 export interface FileListItem {
@@ -36,6 +38,7 @@ export interface FileListItem {
   createdAt: string
   updatedAt: string
   isShared?: boolean
+  shareId?: string
 }
 
 /**

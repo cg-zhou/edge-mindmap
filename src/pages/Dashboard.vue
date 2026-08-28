@@ -124,12 +124,12 @@ const handleShare = async () => {
   if (!selectedFile.value) return
 
   // 1. 获取分享状态
-  const shareId = selectedFile.value.id
+  const shareId = selectedFile.value.shareId
   const base = import.meta.env.VITE_API_BASE || ''
-  const targetUrl = `${base}/share/${shareId}`
+  const targetUrl = shareId ? `${base}/share/${shareId}` : ''
   
   // 2. 如果已经分享过，直接带链接打开；否则打开引导页（不传参数）
-  if (selectedFile.value.isShared) {
+  if (selectedFile.value.isShared && targetUrl) {
     shareDialogRef.value.show(targetUrl)
   } else {
     shareDialogRef.value.show()
@@ -149,9 +149,8 @@ const performShare = async () => {
     const svgData = await editorRef.value.getExportData('svg')
     
     // 3. 调用后端分享接口 
-    const shareId = selectedFile.value.id
     const shareUrl = await fileService.shareFile(
-      shareId,
+      selectedFile.value.id,
       currentData.value, // JSON 数据用于 SEO
       svgData,           // SVG 数据用于展示
       selectedFile.value.title
@@ -159,7 +158,7 @@ const performShare = async () => {
 
     // 4. 更新对话框状态并同步本地状态
     shareDialogRef.value.setUrl(shareUrl)
-    fileStore.setSharedStatus(selectedFile.value.id, true)
+    await fileStore.setSharedStatus(selectedFile.value.id, true)
   } catch (error: any) {
     console.error('Share failed:', error)
     shareDialogRef.value.setLoading(false)
@@ -184,7 +183,7 @@ const handleCancelShare = async () => {
     const success = await fileService.cancelShare(selectedFile.value.id)
     if (success) {
       sharedFiles.value.delete(selectedFile.value.id)
-      fileStore.setSharedStatus(selectedFile.value.id, false)
+      await fileStore.setSharedStatus(selectedFile.value.id, false)
       shareDialogRef.value.setUrl('')
       message.success('已停止分享')
     } else {

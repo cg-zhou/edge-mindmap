@@ -43,7 +43,20 @@ VITE_API_BASE=https://your-api-domain.com
 
 ```
 
-### 2. 开发与构建
+### 2. 配置 ESA 边缘函数
+
+公开分享服务需要以下环境变量：
+
+```env
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_BUCKET_NAME=your_bucket_name
+R2_ACCESS_KEY_ID=your_bucket_access_key
+R2_SECRET_ACCESS_KEY=your_bucket_secret_key
+```
+
+AI 创作服务另需配置 `QWEN_API_KEY`。R2 凭据应仅授予指定 bucket 的对象读写权限。
+
+### 3. 开发与构建
 ```bash
 yarn install
 yarn dev    # 本地开发

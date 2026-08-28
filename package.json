@@ -8,7 +8,7 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:edge-functions": "vitest src/__tests__/edge-functions.test.ts",
+    "test:share-service": "vitest run src/__tests__/share-service.test.js",
     "test:ui": "vitest --ui"
   },
   "dependencies": {

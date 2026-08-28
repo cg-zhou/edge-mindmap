@@ -28,6 +28,12 @@ class FileService {
     return `${timestamp}${random}`
   }
 
+  private generateSecret(bytes: number): string {
+    const value = new Uint8Array(bytes)
+    crypto.getRandomValues(value)
+    return Array.from(value, byte => byte.toString(16).padStart(2, '0')).join('')
+  }
+
   private seedExamplesIfNeeded(): void {
     const currentList = localStorageService.getFileList(LOCAL_USER_ID)
     if (currentList.files.length > 0 || localStorageService.hasSeededExamples()) {
@@ -121,7 +127,13 @@ class FileService {
     return stored
   }
 
-  async updateFile(fileId: string, updates: { title?: string; content?: MindmapContent; isShared?: boolean }): Promise<SaveResult> {
+  async updateFile(fileId: string, updates: {
+    title?: string
+    content?: MindmapContent
+    isShared?: boolean
+    shareId?: string
+    shareToken?: string
+  }): Promise<SaveResult> {
     const current = localStorageService.getFile(LOCAL_USER_ID, fileId)
     if (!current) {
       throw new Error('File not found')
@@ -137,7 +149,13 @@ class FileService {
     }
     const currentList = localStorageService.getFileList(LOCAL_USER_ID)
     const files = currentList.files.map(item => item.id === fileId
-      ? { ...item, title: updatedFile.title, updatedAt: isoNow, isShared: updatedFile.isShared }
+      ? {
+          ...item,
+          title: updatedFile.title,
+          updatedAt: isoNow,
+          isShared: updatedFile.isShared,
+          shareId: updatedFile.shareId
+        }
       : item)
 
     localStorageService.setFile(LOCAL_USER_ID, updatedFile)
@@ -168,16 +186,32 @@ class FileService {
   }
 
   async shareFile(fileId: string, json: MindmapContent, svg: string, title: string): Promise<string> {
-    const response = await this.shareApi.post('/api/share', { id: fileId, json, svg, title })
+    const file = await this.getFile(fileId)
+    const shareId = file.shareId || this.generateSecret(16)
+    const shareToken = file.shareToken || this.generateSecret(32)
+    const response = await this.shareApi.post('/api/share', {
+      id: shareId,
+      token: shareToken,
+      json,
+      svg,
+      title
+    })
     if (!response.data?.shareUrl) {
       throw new Error('分享失败')
     }
+    await this.updateFile(fileId, { isShared: true, shareId, shareToken })
     return `${API_BASE}${response.data.shareUrl}`
   }
 
   async cancelShare(fileId: string): Promise<boolean> {
     try {
-      await this.shareApi.delete(`/api/share?id=${fileId}`)
+      const file = await this.getFile(fileId)
+      if (!file.shareId || !file.shareToken) {
+        return true
+      }
+      await this.shareApi.delete(`/api/share?id=${file.shareId}`, {
+        headers: { 'X-Share-Token': file.shareToken }
+      })
       return true
     } catch (error) {
       console.error('Cancel share error', error)

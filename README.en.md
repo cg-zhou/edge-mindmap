@@ -43,7 +43,20 @@ VITE_API_BASE=https://your-api-domain.com
 
 ```
 
-### 2. Development
+### 2. Configure ESA Edge Functions
+
+The public sharing service requires these environment variables:
+
+```env
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_BUCKET_NAME=your_bucket_name
+R2_ACCESS_KEY_ID=your_bucket_access_key
+R2_SECRET_ACCESS_KEY=your_bucket_secret_key
+```
+
+AI creation also requires `QWEN_API_KEY`. Scope the R2 credentials to object read/write access for this bucket only.
+
+### 3. Development
 ```bash
 yarn install
 yarn dev    # Start dev server

@@ -9,7 +9,7 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/__tests__/setup.ts'],
-    include: ['src/__tests__/**/*.test.ts'],
+    include: ['src/__tests__/**/*.test.{ts,js}'],
     // 测试超时时间（ms）
     testTimeout: 30000,
     // 钩子超时时间（ms）

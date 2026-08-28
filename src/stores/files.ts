@@ -98,7 +98,12 @@ export const useFileStore = defineStore('files', () => {
     currentFile.value = currentFile.value?.id === fileId ? result.file : currentFile.value
     const index = files.value.findIndex(item => item.id === fileId)
     if (index !== -1) {
-      files.value[index] = { ...files.value[index]!, isShared, updatedAt: result.file.updatedAt }
+      files.value[index] = {
+        ...files.value[index]!,
+        isShared,
+        shareId: result.file.shareId,
+        updatedAt: result.file.updatedAt
+      }
     }
   }
 
