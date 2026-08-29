@@ -283,11 +283,6 @@ body {
   color: var(--color-success);
 }
 
-.save-status.status-cloud-pending {
-  color: var(--color-secondary);
-  animation: pulse 1.5s infinite;
-}
-
 .save-status.status-error {
   color: var(--color-danger);
 }

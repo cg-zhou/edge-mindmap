@@ -60,38 +60,8 @@ export interface StoredFileList {
  * 保存状态
  */
 export interface SaveState {
-  status: 'idle' | 'saving' | 'saved' | 'cloud-pending' | 'error'
+  status: 'idle' | 'saving' | 'saved' | 'error'
   message: string
   lastSyncTime?: number
-  retryCount?: number
-  nextRetryTime?: number
-}
-
-/**
- * API 响应类型(旧版,保留兼容性)
- */
-export interface FileListResponse {
-  success?: boolean
-  files: FileListItem[]
-  updatedAt?: number
-  error?: string
-}
-
-export interface FileResponse {
-  success?: boolean
-  file?: File
-  error?: string
-}
-
-/**
- * API 请求类型(旧版,保留兼容性)
- */
-export interface CreateFileRequest {
-  title: string
-}
-
-export interface UpdateFileRequest {
-  title?: string
-  content?: MindmapContent
 }
 
