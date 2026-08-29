@@ -8,6 +8,11 @@
 const textEncoder = new TextEncoder();
 const SHARE_ID_PATTERN = /^[a-f0-9]{32}$/;
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/;
+const MAX_SHARE_BODY_BYTES = 8 * 1024 * 1024;
+const SECURITY_HEADERS = {
+  'Referrer-Policy': 'no-referrer',
+  'X-Content-Type-Options': 'nosniff'
+};
 
 function getR2Config(env = {}) {
   const config = {
@@ -26,6 +31,20 @@ function getR2Config(env = {}) {
   }
 
   return config;
+}
+
+async function getRuntimeEnv(context = {}) {
+  if (context.R2_ACCOUNT_ID || context.env?.R2_ACCOUNT_ID) {
+    return context.env || context;
+  }
+
+  try {
+    const workersModule = 'alibaba:workers';
+    const workers = await import(/* @vite-ignore */ workersModule);
+    return workers.env || {};
+  } catch {
+    return context.env || context;
+  }
 }
 
 function toHex(value) {
@@ -152,7 +171,8 @@ function jsonResponse(data, status = 200, origin = '*') {
       'Access-Control-Allow-Origin': origin === 'null' ? '*' : origin,
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Share-Token',
-      'Cache-Control': 'no-store'
+      'Cache-Control': 'no-store',
+      ...SECURITY_HEADERS
     }
   });
 }
@@ -196,7 +216,22 @@ function normalizeToken(value) {
 }
 
 async function handleCreateShare(request, origin, storage) {
-  const body = await request.json();
+  const declaredLength = Number(request.headers.get('Content-Length'));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_SHARE_BODY_BYTES) {
+    return jsonResponse({ success: false, error: 'Share payload too large' }, 413, origin);
+  }
+
+  const rawBody = await request.text();
+  if (textEncoder.encode(rawBody).byteLength > MAX_SHARE_BODY_BYTES) {
+    return jsonResponse({ success: false, error: 'Share payload too large' }, 413, origin);
+  }
+
+  let body;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return jsonResponse({ success: false, error: 'Invalid JSON' }, 400, origin);
+  }
   const id = normalizeShareId(body.id);
   const token = normalizeToken(body.token);
   if (!id || !token || !body.json) {
@@ -262,7 +297,8 @@ async function handleGetShare(request, url, forcedView, storage) {
       headers: {
         'Content-Type': 'image/svg+xml;charset=utf-8',
         'Cache-Control': 'no-store',
-        'X-Content-Type-Options': 'nosniff'
+        'Content-Security-Policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'",
+        ...SECURITY_HEADERS
       }
     });
   }
@@ -292,7 +328,12 @@ async function handleGetShare(request, url, forcedView, storage) {
 </body>
 </html>`;
     return new Response(html, {
-      headers: { 'Content-Type': 'text/html;charset=utf-8', 'Cache-Control': 'no-store' }
+      headers: {
+        'Content-Type': 'text/html;charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+        ...SECURITY_HEADERS
+      }
     });
   }
 
@@ -321,7 +362,12 @@ async function handleGetShare(request, url, forcedView, storage) {
 </body>
 </html>`;
   return new Response(html, {
-    headers: { 'Content-Type': 'text/html;charset=utf-8', 'Cache-Control': 'no-store' }
+    headers: {
+      'Content-Type': 'text/html;charset=utf-8',
+      'Cache-Control': 'no-store',
+      'Content-Security-Policy': "default-src 'none'; frame-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'",
+      ...SECURITY_HEADERS
+    }
   });
 }
 
@@ -360,7 +406,7 @@ async function handleRequest(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
-    return handleRequest(request, env);
+  async fetch(request, context) {
+    return handleRequest(request, await getRuntimeEnv(context));
   }
 };

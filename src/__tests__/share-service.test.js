@@ -60,6 +60,22 @@ describe('R2 分享边缘函数', () => {
     expect(response.status).toBe(403)
   })
 
+  it('拒绝无效 JSON 和超大分享请求', async () => {
+    const invalidJsonResponse = await shareService.fetch(new Request('https://mindmap.example/api/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{invalid'
+    }), env)
+    const oversizedResponse = await shareService.fetch(new Request('https://mindmap.example/api/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 'x'.repeat(8 * 1024 * 1024 + 1)
+    }), env)
+
+    expect(invalidJsonResponse.status).toBe(400)
+    expect(oversizedResponse.status).toBe(413)
+  })
+
   it('SEO 页面会转义标题和节点文本', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       title: '<script>alert(1)</script>',
@@ -78,5 +94,24 @@ describe('R2 分享边缘函数', () => {
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
     expect(html).toContain('&lt;b&gt;节点&lt;/b&gt;')
     expect(html).not.toContain('<script>alert(1)</script>')
+    expect(response.headers.get('Content-Security-Policy')).toContain("default-src 'none'")
+  })
+
+  it('SVG 响应使用沙箱 CSP 禁止执行分享内容中的脚本', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      title: 'SVG 安全测试',
+      json: { root: { data: { text: '节点' }, children: [] } },
+      svg: '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+      ownerTokenHash: 'hash'
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })))
+
+    const response = await shareService.fetch(
+      new Request(`https://mindmap.example/share/${shareId}.svg`),
+      env
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toContain('image/svg+xml')
+    expect(response.headers.get('Content-Security-Policy')).toContain('sandbox')
   })
 })

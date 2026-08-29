@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:share-service": "vitest run src/__tests__/share-service.test.js",
+    "smoke:share-service": "node scripts/smoke-share-service.mjs",
     "test:ui": "vitest --ui"
   },
   "dependencies": {
