@@ -30,7 +30,7 @@
           </h1>
 
           <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="200">
-            边缘节点加速，AI 辅助梳理灵感，内容安全保存本地
+            边缘节点加速，AI 辅助创作
           </p>
 
           <div class="hero-actions" data-aos="fade-up" data-aos-delay="300">
